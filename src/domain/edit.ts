@@ -1,6 +1,8 @@
 import { diffDays, isISODate } from './dates';
 import { isValidTimeZone } from './time';
-import type { Id, ISODate, Stop, StopKind, Trip, TripEvent } from './types';
+import type { GeoPoint, Id, ISODate, LocalTime, Stop, StopKind, Trip, TripEvent } from './types';
+
+const TIME = /^([01]\d|2[0-3]):[0-5]\d$/;
 
 /** Limites de saisie : bornent la taille des données stockées et affichées. */
 export const LIMITS = {
@@ -39,10 +41,13 @@ export interface StopInput {
   timeZone: string;
   arrival: ISODate;
   departure: ISODate;
+  arrivalTime?: LocalTime;
+  departureTime?: LocalTime;
+  point?: GeoPoint;
   privateAddress?: string;
 }
 
-export type StopError = 'nom-vide' | 'date-invalide' | 'depart-avant-arrivee' | 'fuseau-invalide' | 'trop-d-etapes';
+export type StopError = 'nom-vide' | 'date-invalide' | 'depart-avant-arrivee' | 'fuseau-invalide' | 'heure-invalide' | 'trop-d-etapes';
 
 /** Valide une saisie d'étape. Renvoie la liste des erreurs (vide si tout va bien). */
 export function validateStop(input: StopInput): StopError[] {
@@ -51,6 +56,13 @@ export function validateStop(input: StopInput): StopError[] {
   if (!isISODate(input.arrival) || !isISODate(input.departure)) errors.push('date-invalide');
   else if (diffDays(input.arrival, input.departure) < 0) errors.push('depart-avant-arrivee');
   if (!isValidTimeZone(input.timeZone)) errors.push('fuseau-invalide');
+  const times = [input.arrivalTime, input.departureTime].filter((t): t is string => !!t);
+  if (times.some((t) => !TIME.test(t))) errors.push('heure-invalide');
+  else if (
+    input.arrivalTime && input.departureTime &&
+    (input.kind === 'passage' || input.arrival === input.departure) &&
+    input.departureTime < input.arrivalTime
+  ) errors.push('depart-avant-arrivee');
   return errors;
 }
 
@@ -61,8 +73,12 @@ function toStop(id: Id, input: StopInput): Stop {
     kind: input.kind,
     timeZone: input.timeZone,
     arrival: input.arrival,
-    departure: input.departure,
+    // Une étape de passage se fait dans la journée.
+    departure: input.kind === 'passage' ? input.arrival : input.departure,
   };
+  if (input.arrivalTime) stop.arrivalTime = input.arrivalTime;
+  if (input.departureTime) stop.departureTime = input.departureTime;
+  if (input.point) stop.point = input.point;
   const address = input.privateAddress ? cleanText(input.privateAddress, LIMITS.address) : '';
   if (input.kind === 'famille' && address) stop.privateAddress = address;
   return stop;
@@ -118,6 +134,7 @@ export function validateEvent(trip: Trip, input: EventInput): EventError[] {
       errors.push('date-invalide');
     } else if (diffDays(input.checkIn, input.checkOut) <= 0) errors.push('depart-avant-arrivee');
   } else if (input.date !== undefined && !isISODate(input.date)) errors.push('date-invalide');
+  if (input.time !== undefined && !TIME.test(input.time)) errors.push('date-invalide');
   return errors;
 }
 

@@ -1,6 +1,6 @@
 # PlanifTrek
 
-Planificateur de voyage sur mesure, utilisable hors ligne : les étapes datées, les trajets, les hébergements, le budget et les billets au même endroit, réorganisables à tout moment sans rien perdre. Un seul voyageur prépare et pilote le voyage, sur PC puis sur son téléphone Android. Version 0.2.0 (incrément 1 en cours).
+Planificateur de voyage sur mesure, utilisable hors ligne : les étapes datées, les trajets, les hébergements, le budget et les billets au même endroit, réorganisables à tout moment sans rien perdre. Un seul voyageur prépare et pilote le voyage, sur PC puis sur son téléphone Android. Version 0.3.0 (incrément 1 en cours).
 
 | Incrément | Contenu | État |
 | --- | --- | --- |
@@ -15,7 +15,7 @@ Planificateur de voyage sur mesure, utilisable hors ligne : les étapes datées,
 
 | Moment | Ce que fait l'application |
 | --- | --- |
-| Je construis mon itinéraire | Étapes (ville ou **visite famille**, sans coût, adresse privée) avec dates d'arrivée et de départ ; les journées sont générées automatiquement (Jérusalem 10 → 13 août : 4 journées, 3 nuits). |
+| Je construis mon itinéraire | Étapes (séjour, **passage** sans nuit comme un aéroport ou une prise de voiture, ou **visite famille** sans coût avec adresse privée), heures d'arrivée et de départ facultatives pour les demi-journées, **recherche du lieu** qui renseigne aussi le fuseau avec dates d'arrivée et de départ ; les journées sont générées automatiquement (Jérusalem 10 → 13 août : 4 journées, 3 nuits). |
 | Je change le circuit | Insérer une étape (Mer Morte entre Netanya et Eilat), déplacer, **fermer la boucle** (Tel Aviv → … → Tel Aviv). Un **aperçu** montre les dates décalées et les trajets à créer ou à revoir avant d'appliquer ; deux choix : garder les dates de chaque étape ou les recalculer en cascade en gardant les durées. **Annuler** (Ctrl+Z) défait l'opération. |
 | Mes réservations ne collent plus | Les activités restent toujours dans leur ville. Un trajet manquant est créé en brouillon ; un trajet réservé devenu inutile n'est jamais supprimé : il passe « à vérifier », et redevient « réservé » si l'étape revient à sa place. |
 | Je saisis un vol ou un train | Durée calculée avec le fuseau de chaque lieu : Paris 10h → Tel Aviv 15h = 4 h, Tel Aviv 16h → Paris 18h30 = 3 h 30. Une arrivée avant le départ est refusée. |
@@ -26,7 +26,10 @@ Planificateur de voyage sur mesure, utilisable hors ligne : les étapes datées,
 - **Mes données** : au premier lancement, vous choisissez d'enregistrer vos voyages sur l'appareil ou d'essayer sans rien enregistrer. Rien n'est écrit avant ce choix. « Mes données » efface tout, choix compris.
 - **Mes voyages** : liste avec dates, nombre d'étapes et points à vérifier ; création ; circuit d'exemple (Israël) ; suppression confirmée.
 - **Étapes** : ajout et modification (nom, ville ou visite famille, dates, fuseau horaire, adresse privée pour la famille), dates et fuseau proposés à partir de l'étape précédente, suppression qui annonce ce qu'elle emporte (événements, trajets réservés).
-- **Événements** : hébergement (arrivée et départ), visite, activité, famille, temps libre, rattachés à une étape.
+- **Durée** : boutons − / + nuit sur chaque étape ; les étapes suivantes glissent d'autant, leurs sous-étapes non réservées suivent, les réservations restent et sont signalées.
+- **Hébergement** : chaque étape indique ses nuits non couvertes et propose « Ajouter un hébergement » pré-rempli.
+- **Sous-étapes** : repas, déplacement, visite, activité, famille, événement (soirée, mariage), temps libre, avec heure facultative ; classées par journée, réorganisables (glisser-déposer ou ↑ ↓) et transférables vers une autre étape.
+- **Recherche de lieu** : bouton « Chercher » (Nominatim, sur clic, 1 requête/s, résultats gardés), jamais pour une visite famille ; en cas de panne, saisie libre.
 - **Réorganiser** : glisser-déposer à la souris, au doigt ou au clavier (Espace, flèches, Espace), boutons monter et descendre ; aperçu avant d'appliquer ; « Fermer la boucle ».
 - **Annuler / Rétablir** : boutons et Ctrl+Z, Ctrl+Maj+Z (50 niveaux).
 - **Contrôles** : relancés à chaque modification et annoncés aux lecteurs d'écran.
@@ -79,16 +82,17 @@ Le workflow `.github/workflows/ci.yml` vérifie, construit et teste chaque pull 
 
 | Job | Contenu |
 | --- | --- |
-| Vérifier | `npm audit`, lint, types stricts, 37 tests unitaires |
+| Vérifier | `npm audit`, lint, types stricts, 44 tests unitaires |
 | Construire | build de production, chemin de publication conforme au nom du dépôt, budget de poids (2 Mo au plus) |
-| Recette navigateur | 10 scénarios Playwright sur PC et Android simulé (consentement, effacement, saisie, réorganisation au clavier, boucle, suppression, accessibilité, CSP) ; rapport en artefact en cas d'échec |
+| Recette navigateur | 13 scénarios Playwright sur PC et Android simulé (consentement, effacement, saisie, passage, +/- nuits, sous-étapes, recherche de lieu simulée et en panne, réorganisation au clavier, boucle, suppression, accessibilité, CSP) ; rapport en artefact en cas d'échec |
 
 Le workflow `.github/workflows/pages.yml` publie le site à chaque fusion sur `main` : **https://metazel.github.io/PlanifTrek/** (Settings > Pages > Source : GitHub Actions). Actions épinglées par empreinte SHA, permissions limitées par job. Dependabot propose chaque semaine les mises à jour npm et GitHub Actions. Toute modification passe par une pull request.
 
 ## Limites connues
 
 - Pas encore de carte ni de saisie des trajets (horaires, mode, prix) : prochaines versions.
-- Une réorganisation en cascade décale les étapes, jamais les réservations : les hébergements et activités concernés sont signalés, à corriger à la main.
+- Un décalage d'étapes ne déplace jamais une réservation (hébergement, sous-étape avec référence ou statut de paiement) : elle est signalée, à corriger à la main.
+- Fuseau déduit du pays pour une quarantaine de pays ; sinon, à choisir.
 - Fuseau horaire choisi par l'utilisateur pour chaque étape (pas de déduction automatique depuis la carte).
 - Trajets estimés à vol d'oiseau : pas de calcul d'itinéraire routier.
 - Taux de change saisis à la main.

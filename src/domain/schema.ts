@@ -10,6 +10,7 @@ import type { Trip } from './types';
 const id = z.string().regex(/^[A-Za-z0-9_-]{1,64}$/);
 const isoDate = z.string().refine(isISODate, 'date invalide');
 const localDateTime = z.string().regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/);
+const localTime = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/);
 const timeZone = z.string().max(64).refine(isValidTimeZone, 'fuseau invalide');
 const text = (max: number) => z.string().max(max);
 const currency = z.string().regex(/^[A-Z]{3}$/);
@@ -20,10 +21,12 @@ const paymentStatus = z.enum(['paye', 'acompte', 'a-payer', 'gratuit']);
 const stopSchema = z.strictObject({
   id,
   name: text(80),
-  kind: z.enum(['ville', 'famille']),
+  kind: z.enum(['ville', 'famille', 'passage']),
   timeZone,
   arrival: isoDate,
   departure: isoDate,
+  arrivalTime: localTime.optional(),
+  departureTime: localTime.optional(),
   point: point.optional(),
   privateAddress: text(200).optional(),
 });
@@ -31,9 +34,10 @@ const stopSchema = z.strictObject({
 const eventSchema = z.strictObject({
   id,
   stopId: id,
-  kind: z.enum(['hebergement', 'visite', 'famille', 'temps-libre', 'activite']),
+  kind: z.enum(['hebergement', 'repas', 'deplacement', 'visite', 'activite', 'famille', 'evenement', 'temps-libre']),
   title: text(120),
   date: isoDate.optional(),
+  time: localTime.optional(),
   checkIn: isoDate.optional(),
   checkOut: isoDate.optional(),
   price: moneySchema.optional(),
