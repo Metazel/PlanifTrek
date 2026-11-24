@@ -1,33 +1,54 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 
-test.describe('Accueil', () => {
-  test('affiche l’état vide puis le circuit d’exemple sans incohérence', async ({ page }) => {
+async function noBlockingA11y(page: Page) {
+  const { violations } = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze();
+  const blocking = violations.filter((v) => v.impact === 'critical' || v.impact === 'serious');
+  expect(blocking, JSON.stringify(blocking.map((v) => [v.id, v.nodes.map((n) => n.target)]), null, 2)).toEqual([]);
+}
+
+test.describe('Consentement et données', () => {
+  test('premier lancement : rien n’est stocké avant le choix', async ({ page }) => {
     const errors: string[] = [];
     page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
     page.on('pageerror', (e) => errors.push(e.message));
 
     await page.goto('./');
-    await expect(page.getByRole('heading', { name: 'PlanifTrek' })).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'Aucun voyage' })).toBeVisible();
-
-    await page.getByRole('button', { name: "Charger l'exemple" }).click();
-    await expect(page.getByRole('heading', { name: 'Israël — août' })).toBeVisible();
-    await expect(page.getByRole('listitem').filter({ hasText: 'Jérusalem' }).first()).toContainText('4 jour(s)');
-    await expect(page.getByText('Aucune incohérence détectée.')).toBeVisible();
-
-    // Aucune violation de la CSP ni erreur JavaScript.
+    await expect(page.getByRole('heading', { name: 'Où garder vos voyages ?' })).toBeVisible();
+    const dbs = await page.evaluate(async () => (await indexedDB.databases()).map((d) => d.name));
+    expect(dbs).not.toContain('planiftrek');
+    await noBlockingA11y(page);
     expect(errors).toEqual([]);
   });
 
-  test('ne présente aucune anomalie d’accessibilité critique ou sérieuse', async ({ page }) => {
+  test('mode essai : rien n’est écrit, le choix est redemandé au rechargement', async ({ page }) => {
     await page.goto('./');
-    for (const state of ['vide', 'exemple']) {
-      if (state === 'exemple') await page.getByRole('button', { name: "Charger l'exemple" }).click();
-      const { violations } = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze();
-      const blocking = violations.filter((v) => v.impact === 'critical' || v.impact === 'serious');
-      expect(blocking, JSON.stringify(blocking, null, 2)).toEqual([]);
-    }
+    await page.getByRole('button', { name: 'Essayer sans enregistrer' }).click();
+    await expect(page.getByText('Essai : rien n’est enregistré')).toBeVisible();
+    await page.getByRole('button', { name: "Charger l'exemple" }).click();
+    await expect(page.getByRole('heading', { name: 'Étapes' })).toBeVisible();
+    const dbs = await page.evaluate(async () => (await indexedDB.databases()).map((d) => d.name));
+    expect(dbs).not.toContain('planiftrek');
+    await page.reload();
+    await expect(page.getByRole('heading', { name: 'Où garder vos voyages ?' })).toBeVisible();
+  });
+
+  test('accord puis effacement total', async ({ page }) => {
+    await page.goto('./');
+    await page.getByRole('button', { name: 'Enregistrer mes voyages sur cet appareil' }).click();
+    await page.getByRole('button', { name: "Charger l'exemple" }).click();
+    await page.getByRole('button', { name: '← Mes voyages' }).click();
+    await page.reload();
+    await expect(page.getByRole('button', { name: /Israël — août \(exemple\)/ })).toBeVisible();
+
+    await page.getByRole('button', { name: 'Mes données' }).click();
+    await page.getByRole('button', { name: 'Effacer toutes mes données' }).click();
+    await expect(page.getByRole('heading', { name: 'Où garder vos voyages ?' })).toBeVisible();
+    await expect(page.getByText('Toutes vos données ont été effacées')).toBeVisible();
+    await page.reload();
+    await expect(page.getByRole('heading', { name: 'Où garder vos voyages ?' })).toBeVisible();
+    const consent = await page.evaluate(() => localStorage.getItem('planiftrek.consentement'));
+    expect(consent).toBeNull();
   });
 
   test('applique la politique de sécurité du contenu', async ({ page }) => {
@@ -35,5 +56,6 @@ test.describe('Accueil', () => {
     const csp = await page.locator('meta[http-equiv="Content-Security-Policy"]').getAttribute('content');
     expect(csp).toContain("script-src 'self'");
     expect(csp).toContain("object-src 'none'");
+    expect(csp).not.toContain('unsafe-inline');
   });
 });
