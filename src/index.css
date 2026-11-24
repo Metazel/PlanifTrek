@@ -1,0 +1,26 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  /* Code couleur sémantique : toujours doublé d'une icône et d'un libellé (RGAA 3.1). */
+  --color-transport: #2563eb;
+  --color-hebergement: #059669;
+  --color-visite: #d97706;
+  --color-budget: #7c3aed;
+}
+
+:root {
+  color-scheme: light dark;
+}
+
+body {
+  @apply bg-[#F8FAFC] text-slate-900 antialiased dark:bg-[#0F172A] dark:text-slate-100;
+}
+
+:focus-visible {
+  @apply outline-2 outline-offset-2 outline-blue-600;
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
