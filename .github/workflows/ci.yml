@@ -48,6 +48,10 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
+      - name: Chemin de publication conforme au nom du dépôt (sensible à la casse)
+        run: |
+          repo="${GITHUB_REPOSITORY#*/}"
+          grep -q "src=\"/${repo}/assets/" dist/index.html || { echo "base Vite ≠ /${repo}/ : page blanche sur Pages"; exit 1; }
       - name: Budget de poids (frugalité)
         run: |
           size=$(du -sk dist | cut -f1)

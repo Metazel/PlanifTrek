@@ -79,7 +79,7 @@ Le workflow `.github/workflows/ci.yml` vérifie, construit et teste chaque pull 
 | Construire | build de production, budget de poids (2 Mo au plus) |
 | Recette navigateur | Playwright sur PC et Android simulé : parcours, accessibilité, CSP ; rapport en artefact en cas d'échec |
 
-Le workflow `.github/workflows/pages.yml` publie le site à chaque fusion sur `main` : **https://metazel.github.io/planiftrek/** (Settings > Pages > Source : GitHub Actions). Actions épinglées par empreinte SHA, permissions limitées par job. Dependabot propose chaque semaine les mises à jour npm et GitHub Actions. Toute modification passe par une pull request.
+Le workflow `.github/workflows/pages.yml` publie le site à chaque fusion sur `main` : **https://metazel.github.io/PlanifTrek/** (Settings > Pages > Source : GitHub Actions). Actions épinglées par empreinte SHA, permissions limitées par job. Dependabot propose chaque semaine les mises à jour npm et GitHub Actions. Toute modification passe par une pull request.
 
 ## Limites connues
 

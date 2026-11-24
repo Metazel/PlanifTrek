@@ -37,8 +37,8 @@ function cspMeta(): Plugin {
 }
 
 export default defineConfig({
-  // Le site est publié sur https://metazel.github.io/planiftrek/
-  base: '/planiftrek/',
+  // Le site est publié sur https://metazel.github.io/PlanifTrek/
+  base: '/PlanifTrek/',
   plugins: [react(), tailwindcss(), cspMeta()],
   build: {
     sourcemap: false,
