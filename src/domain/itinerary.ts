@@ -1,4 +1,5 @@
 import { addDays, diffDays } from './dates';
+import { shiftPlannedEvents } from './plan';
 import type { Id, ISODate, Stop, Transport, Trip } from './types';
 
 /** Déplace l'élément d'index `from` à l'index `to`. Renvoie un nouveau tableau. */
@@ -125,7 +126,7 @@ export function previewReorder(trip: Trip, newOrder: readonly Id[], mode: Schedu
 
 /**
  * Applique un aperçu validé par l'utilisateur.
- * Les activités ne sont jamais touchées : elles restent rattachées à leur étape.
+ * Les sous-étapes restent rattachées à leur étape ; seules les non réservées glissent avec elle.
  */
 export function applyReorder(trip: Trip, preview: ReorderPreview, newId: () => Id): Trip {
   const { toCreate, toDelete, toFlag, toRestore } = preview.transports;
@@ -140,7 +141,11 @@ export function applyReorder(trip: Trip, preview: ReorderPreview, newId: () => I
   for (const [from, to] of toCreate) {
     transports.push({ id: newId(), fromStopId: from, toStopId: to, mode: 'voiture', status: 'brouillon' });
   }
-  return { ...trip, stopOrder: [...preview.order], stops: preview.stops, transports };
+  // Les sous-étapes non réservées suivent leur étape ; les réservations restent et sont signalées.
+  const deltas = Object.fromEntries(
+    preview.dateChanges.map((c) => [c.stopId, diffDays(c.before.arrival, c.after.arrival)]),
+  );
+  return shiftPlannedEvents({ ...trip, stopOrder: [...preview.order], stops: preview.stops, transports }, deltas);
 }
 
 /**

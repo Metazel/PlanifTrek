@@ -20,7 +20,10 @@ export interface GeoPoint {
   lon: number;
 }
 
-export type StopKind = 'ville' | 'famille';
+/** passage : simple transit dans la journée (aéroport, location de voiture), sans nuit. */
+export type StopKind = 'ville' | 'famille' | 'passage';
+/** Heure locale HH:mm. */
+export type LocalTime = string;
 
 export interface Stop {
   id: Id;
@@ -30,6 +33,9 @@ export interface Stop {
   timeZone: string;
   arrival: ISODate;
   departure: ISODate;
+  /** Demi-journée : heures d'arrivée et de départ facultatives. */
+  arrivalTime?: LocalTime;
+  departureTime?: LocalTime;
   point?: GeoPoint;
   /**
    * Adresse privée (étape famille). Jamais envoyée à un service tiers,
@@ -47,7 +53,16 @@ export interface Money {
 
 export type PaymentStatus = 'paye' | 'acompte' | 'a-payer' | 'gratuit';
 
-export type EventKind = 'hebergement' | 'visite' | 'famille' | 'temps-libre' | 'activite';
+/** Sous-étapes d'une journée. L'ordre d'affichage d'une journée est l'ordre du tableau `events`. */
+export type EventKind =
+  | 'hebergement'
+  | 'repas'
+  | 'deplacement'
+  | 'visite'
+  | 'activite'
+  | 'famille'
+  | 'evenement'
+  | 'temps-libre';
 
 export interface TripEvent {
   id: Id;
@@ -56,6 +71,8 @@ export interface TripEvent {
   title: string;
   /** Jour de l'activité (sauf hébergement). */
   date?: ISODate;
+  /** Heure indicative, facultative. */
+  time?: LocalTime;
   /** Hébergement : nuit d'arrivée (incluse). */
   checkIn?: ISODate;
   /** Hébergement : jour de départ (exclu des nuits). */

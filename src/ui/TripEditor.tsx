@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { checkTrip, describeAlert } from '../domain/coherence';
 import { addEvent, addStop, defaultDates, defaultTimeZone, removeEvent, removeStop, renameTrip, stopDependencies, updateStop } from '../domain/edit';
 import { applyReorder, closeLoop, previewReorder } from '../domain/itinerary';
+import { moveEvent, reorderDay, resizeStop, transferEvent } from '../domain/plan';
 import type { Id, Trip } from '../domain/types';
 import { newId, useStore } from '../state/store';
 import { btn, Dialog, field } from './Dialog';
@@ -100,6 +101,10 @@ export function TripEditor({ trip }: { trip: Trip }) {
           onRemoveStop={setRemoving}
           onAddEvent={(input) => update((t) => addEvent(t, newId(), input))}
           onRemoveEvent={(id) => update((t) => removeEvent(t, id))}
+          onResize={(id, d) => update((t) => resizeStop(t, id, d))}
+          onMoveEvent={(id, dir) => update((t) => moveEvent(t, id, dir))}
+          onReorderDay={(ids) => update((t) => reorderDay(t, ids))}
+          onTransferEvent={(id, stopId) => update((t) => transferEvent(t, id, stopId))}
         />
         <div className="mt-3 rounded-2xl border border-dashed border-slate-300 p-4 dark:border-slate-700">
           {adding ? (

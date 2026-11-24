@@ -10,49 +10,47 @@ import {
 } from '@dnd-kit/core';
 import { SortableContext, arrayMove, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { daysOfStop } from '../domain/coherence';
 import { diffDays } from '../domain/dates';
 import type { EventInput, StopInput } from '../domain/edit';
-import type { Id, Stop, Trip } from '../domain/types';
-import { btn } from './Dialog';
-import { EventForm, EVENT_LABELS } from './EventForm';
+import { uncoveredNights } from '../domain/plan';
+import type { Id, Stop, Trip, TripEvent } from '../domain/types';
+import { btn, field } from './Dialog';
+import { EventForm, EVENT_ICONS, type EventPrefill } from './EventForm';
 import { StopForm } from './StopForm';
 import { fmtDate, fmtDay, nights } from './format';
 
-interface Props {
+export interface StopListProps {
   trip: Trip;
   onReorder: (order: Id[]) => void;
   onUpdateStop: (id: Id, input: StopInput) => void;
   onRemoveStop: (id: Id) => void;
   onAddEvent: (input: EventInput) => void;
   onRemoveEvent: (id: Id) => void;
+  onResize: (id: Id, delta: number) => void;
+  onMoveEvent: (id: Id, dir: -1 | 1) => void;
+  onReorderDay: (ids: Id[]) => void;
+  onTransferEvent: (id: Id, stopId: Id) => void;
 }
 
-export function StopList(props: Props) {
-  const { trip, onReorder } = props;
+/** Liste triable : souris, doigt (appui court) et clavier (Espace, flèches, Espace), avec annonces en français. */
+function Sortable({ ids, label, onMove, children }: { ids: Id[]; label: (id: Id) => string; onMove: (ids: Id[]) => void; children: ReactNode }) {
   const sensors = useSensors(
-    // Délai au toucher : le défilement au doigt reste possible.
     useSensor(PointerSensor, { activationConstraint: { delay: 150, tolerance: 6 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
-  const name = (id: string | number) => trip.stops[String(id)]?.name ?? '';
-  const pos = (id: string | number) => trip.stopOrder.indexOf(String(id)) + 1;
+  const n = (id: string | number) => label(String(id));
+  const pos = (id: string | number) => ids.indexOf(String(id)) + 1;
   const announcements: Announcements = {
-    onDragStart: ({ active }) => `${name(active.id)} saisie, position ${pos(active.id)}.`,
-    onDragOver: ({ active, over }) =>
-      !over ? `${name(active.id)} hors de la liste.` : over.id === active.id ? undefined : `${name(active.id)} au-dessus de ${name(over.id)}.`,
-    onDragEnd: ({ active, over }) => (over ? `${name(active.id)} déposée à la place de ${name(over.id)}.` : `${name(active.id)} reposée.`),
-    onDragCancel: ({ active }) => `Déplacement de ${name(active.id)} annulé.`,
+    onDragStart: ({ active }) => `${n(active.id)} saisie, position ${pos(active.id)}.`,
+    onDragOver: ({ active, over }) => (!over ? `${n(active.id)} hors de la liste.` : over.id === active.id ? undefined : `${n(active.id)} au-dessus de ${n(over.id)}.`),
+    onDragEnd: ({ active, over }) => (over ? `${n(active.id)} déposée à la place de ${n(over.id)}.` : `${n(active.id)} reposée.`),
+    onDragCancel: ({ active }) => `Déplacement de ${n(active.id)} annulé.`,
   };
-
   const end = ({ active, over }: DragEndEvent) => {
-    if (!over || active.id === over.id) return;
-    const from = trip.stopOrder.indexOf(String(active.id));
-    const to = trip.stopOrder.indexOf(String(over.id));
-    onReorder(arrayMove(trip.stopOrder, from, to));
+    if (over && active.id !== over.id) onMove(arrayMove(ids, ids.indexOf(String(active.id)), ids.indexOf(String(over.id))));
   };
-
   return (
     <DndContext
       sensors={sensors}
@@ -60,92 +58,137 @@ export function StopList(props: Props) {
       onDragEnd={end}
       accessibility={{
         announcements,
-        screenReaderInstructions: {
-          draggable:
-            'Pour déplacer une étape : Espace pour la saisir, flèches haut et bas pour la déplacer, Espace pour la déposer, Échap pour annuler.',
-        },
+        screenReaderInstructions: { draggable: 'Espace pour saisir, flèches haut et bas pour déplacer, Espace pour déposer, Échap pour annuler.' },
       }}
     >
-      <SortableContext items={trip.stopOrder} strategy={verticalListSortingStrategy}>
-        <ol className="flex flex-col gap-3" aria-label="Étapes du voyage">
-          {trip.stopOrder.map((id, i) => {
-            const s = trip.stops[id];
-            return s ? <StopCard key={id} stop={s} index={i} {...props} /> : null;
-          })}
-        </ol>
+      <SortableContext items={ids} strategy={verticalListSortingStrategy}>
+        {children}
       </SortableContext>
     </DndContext>
   );
 }
 
-function StopCard({ stop, index, trip, onReorder, onUpdateStop, onRemoveStop, onAddEvent, onRemoveEvent }: Props & { stop: Stop; index: number }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: stop.id });
-  const [editing, setEditing] = useState(false);
-  const [adding, setAdding] = useState(false);
-  const events = trip.events
-    .filter((e) => e.stopId === stop.id)
-    .sort((a, b) => (a.checkIn ?? a.date ?? '').localeCompare(b.checkIn ?? b.date ?? ''));
+function useDrag(id: Id) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+  return {
+    ref: setNodeRef,
+    style: { transform: CSS.Transform.toString(transform), transition },
+    isDragging,
+    handle: { ...attributes, ...listeners },
+  };
+}
+
+export function StopList(props: StopListProps) {
+  const { trip, onReorder } = props;
+  return (
+    <Sortable ids={trip.stopOrder} label={(id) => trip.stops[id]?.name ?? ''} onMove={onReorder}>
+      <ol className="flex flex-col gap-3" aria-label="Étapes du voyage">
+        {trip.stopOrder.map((id, i) => {
+          const s = trip.stops[id];
+          return s ? <StopCard key={id} stop={s} index={i} {...props} /> : null;
+        })}
+      </ol>
+    </Sortable>
+  );
+}
+
+const KIND_ICON = { ville: '', famille: '👪 ', passage: '🚏 ' } as const;
+
+function StopCard(p: StopListProps & { stop: Stop; index: number }) {
+  const { stop, index, trip } = p;
+  const drag = useDrag(stop.id);
+  const [mode, setMode] = useState<'view' | 'edit' | 'add'>('view');
+  const [prefill, setPrefill] = useState<EventPrefill>({});
+  const n = Math.max(0, diffDays(stop.arrival, stop.departure));
   const last = trip.stopOrder.length - 1;
-  const move = (to: number) => onReorder(arrayMove(trip.stopOrder, index, to));
+  const move = (to: number) => p.onReorder(arrayMove(trip.stopOrder, index, to));
+  const mine = trip.events.filter((e) => e.stopId === stop.id);
+  const lodgings = mine.filter((e) => e.kind === 'hebergement');
+  const missing = uncoveredNights(trip, stop.id);
+  const openAdd = (pf: EventPrefill) => {
+    setPrefill(pf);
+    setMode('add');
+  };
+  const hours = [stop.arrivalTime && `arrivée ${stop.arrivalTime}`, stop.departureTime && `départ ${stop.departureTime}`].filter(Boolean).join(', ');
 
   return (
     <li
-      ref={setNodeRef}
-      style={{ transform: CSS.Transform.toString(transform), transition }}
-      className={`rounded-2xl border bg-white p-4 shadow-sm dark:bg-slate-900 ${isDragging ? 'z-10 border-blue-500 shadow-lg' : 'border-slate-200 dark:border-slate-800'}`}
+      ref={drag.ref}
+      style={drag.style}
+      className={`rounded-2xl border bg-white p-4 shadow-sm dark:bg-slate-900 ${drag.isDragging ? 'z-10 border-blue-500 shadow-lg' : 'border-slate-200 dark:border-slate-800'}`}
     >
-      <div className="flex items-start gap-2">
-        <button
-          type="button"
-          className={`${btn.icon} cursor-grab touch-none text-slate-500`}
-          aria-label={`Déplacer ${stop.name}`}
-          {...attributes}
-          {...listeners}
-        >
+      <div className="flex flex-wrap items-start gap-1">
+        <button type="button" className={`${btn.icon} cursor-grab touch-none text-slate-500`} aria-label={`Déplacer ${stop.name}`} {...drag.handle}>
           ⠿
         </button>
-        <div className="min-w-0 flex-1">
+        <div className="min-w-0 flex-1 basis-48">
           <h3 className="font-medium">
             <span className="tabular mr-2 text-slate-500">{index + 1}.</span>
-            {stop.kind === 'famille' ? '👪 ' : ''}
+            {KIND_ICON[stop.kind]}
             {stop.name}
           </h3>
           <p className="tabular text-sm text-slate-600 dark:text-slate-300">
-            {fmtDate(stop.arrival)} → {fmtDate(stop.departure)} · {daysOfStop(stop).length} jour(s), {nights(Math.max(0, diffDays(stop.arrival, stop.departure)))}
+            {stop.kind === 'passage' ? `Passage le ${fmtDate(stop.arrival)}` : `${fmtDate(stop.arrival)} → ${fmtDate(stop.departure)} · ${daysOfStop(stop).length} jour(s), ${nights(n)}`}
+            {hours && ` · ${hours}`}
             <span className="sr-only"> · fuseau {stop.timeZone}</span>
           </p>
         </div>
-        <div className="flex shrink-0">
-          <button type="button" className={btn.icon} disabled={index === 0} onClick={() => move(index - 1)} aria-label={`Monter ${stop.name}`}>
-            ↑
-          </button>
-          <button type="button" className={btn.icon} disabled={index === last} onClick={() => move(index + 1)} aria-label={`Descendre ${stop.name}`}>
-            ↓
-          </button>
+        <div className="ml-auto flex items-center gap-1">
+        {stop.kind !== 'passage' && (
+          <div className="flex shrink-0 items-center rounded-xl border border-slate-200 dark:border-slate-700" role="group" aria-label={`Durée à ${stop.name}`}>
+            <button type="button" className={btn.icon} disabled={n === 0} onClick={() => p.onResize(stop.id, -1)} aria-label={`Une nuit de moins à ${stop.name}`}>
+              −
+            </button>
+            <span className="tabular px-1 text-sm" aria-hidden="true">
+              {n}
+            </span>
+            <button type="button" className={btn.icon} onClick={() => p.onResize(stop.id, 1)} aria-label={`Une nuit de plus à ${stop.name}`}>
+              +
+            </button>
+          </div>
+        )}
+        <button type="button" className={btn.icon} disabled={index === 0} onClick={() => move(index - 1)} aria-label={`Monter ${stop.name}`}>
+          ↑
+        </button>
+        <button type="button" className={btn.icon} disabled={index === last} onClick={() => move(index + 1)} aria-label={`Descendre ${stop.name}`}>
+          ↓
+        </button>
         </div>
       </div>
 
-      {events.length > 0 && (
-        <ul className="mt-3 flex flex-col gap-1 border-t border-slate-100 pt-3 text-sm dark:border-slate-800">
-          {events.map((e) => (
-            <li key={e.id} className="flex items-center justify-between gap-2">
+      {(lodgings.length > 0 || missing.length > 0) && (
+        <div className="mt-3 border-t border-slate-100 pt-3 text-sm dark:border-slate-800">
+          {lodgings.map((e) => (
+            <div key={e.id} className="flex items-center justify-between gap-2">
               <span>
-                <span className="mr-1">{EVENT_LABELS[e.kind].split(' ')[0]}</span>
-                <span className="sr-only">{EVENT_LABELS[e.kind].slice(2)} : </span>
-                {e.title}
+                🛏<span className="sr-only"> Hébergement :</span> {e.title}
                 <span className="tabular ml-2 text-slate-500">
-                  {e.kind === 'hebergement' && e.checkIn && e.checkOut ? `${fmtDate(e.checkIn)} → ${fmtDate(e.checkOut)}` : e.date ? fmtDay(e.date) : ''}
+                  {e.checkIn && fmtDate(e.checkIn)} → {e.checkOut && fmtDate(e.checkOut)}
                 </span>
               </span>
-              <button type="button" className={`${btn.icon} text-slate-500`} onClick={() => onRemoveEvent(e.id)} aria-label={`Supprimer ${e.title}`}>
+              <button type="button" className={`${btn.icon} text-slate-500`} onClick={() => p.onRemoveEvent(e.id)} aria-label={`Supprimer ${e.title}`}>
                 ✕
               </button>
-            </li>
+            </div>
           ))}
-        </ul>
+          {missing.length > 0 && (
+            <div className="flex flex-wrap items-center gap-2 text-amber-800 dark:text-amber-300">
+              <span>⚠ {nights(missing.length)} sans hébergement</span>
+              <button
+                type="button"
+                className={btn.secondary}
+                onClick={() => openAdd({ kind: 'hebergement', checkIn: missing[0] ?? stop.arrival, checkOut: stop.departure })}
+              >
+                Ajouter un hébergement
+              </button>
+            </div>
+          )}
+        </div>
       )}
 
-      {editing ? (
+      <Days {...p} events={mine.filter((e) => e.kind !== 'hebergement')} onAddOnDay={(date) => openAdd({ date })} />
+
+      {mode === 'edit' ? (
         <div className="mt-3">
           <StopForm
             initial={{
@@ -154,39 +197,128 @@ function StopCard({ stop, index, trip, onReorder, onUpdateStop, onRemoveStop, on
               timeZone: stop.timeZone,
               arrival: stop.arrival,
               departure: stop.departure,
+              ...(stop.arrivalTime ? { arrivalTime: stop.arrivalTime } : {}),
+              ...(stop.departureTime ? { departureTime: stop.departureTime } : {}),
+              ...(stop.point ? { point: stop.point } : {}),
               ...(stop.privateAddress ? { privateAddress: stop.privateAddress } : {}),
             }}
             submitLabel="Enregistrer"
             onSubmit={(input) => {
-              onUpdateStop(stop.id, input);
-              setEditing(false);
+              p.onUpdateStop(stop.id, input);
+              setMode('view');
             }}
-            onCancel={() => setEditing(false)}
+            onCancel={() => setMode('view')}
           />
         </div>
-      ) : adding ? (
+      ) : mode === 'add' ? (
         <EventForm
           trip={trip}
           stop={stop}
+          prefill={prefill}
           onSubmit={(input) => {
-            onAddEvent(input);
-            setAdding(false);
+            p.onAddEvent(input);
+            setMode('view');
           }}
-          onCancel={() => setAdding(false)}
+          onCancel={() => setMode('view')}
         />
       ) : (
         <div className="mt-3 flex flex-wrap gap-2 text-sm">
-          <button type="button" className={btn.secondary} onClick={() => setAdding(true)}>
-            + Événement
+          <button type="button" className={btn.secondary} onClick={() => openAdd({})}>
+            + Sous-étape
           </button>
-          <button type="button" className={btn.secondary} onClick={() => setEditing(true)}>
+          <button type="button" className={btn.secondary} onClick={() => setMode('edit')}>
             Modifier
           </button>
-          <button type="button" className={btn.secondary} onClick={() => onRemoveStop(stop.id)}>
+          <button type="button" className={btn.secondary} onClick={() => p.onRemoveStop(stop.id)}>
             Supprimer l’étape
           </button>
         </div>
       )}
+    </li>
+  );
+}
+
+/** Journées de l'étape et leurs sous-étapes, réorganisables et transférables. */
+function Days(p: StopListProps & { stop: Stop; events: TripEvent[]; onAddOnDay: (d: string) => void }) {
+  const { stop, events, trip } = p;
+  const days = daysOfStop(stop);
+  const outside = events.filter((e) => !e.date || !days.includes(e.date));
+  if (!events.length) return null;
+  return (
+    <div className="mt-3 flex flex-col gap-3 border-t border-slate-100 pt-3 dark:border-slate-800">
+      {days.map((d) => {
+        const list = events.filter((e) => e.date === d);
+        if (!list.length) return null;
+        return (
+          <section key={d} aria-label={`${stop.name}, ${fmtDay(d)}`}>
+            <h4 className="text-xs font-semibold uppercase tracking-wide text-slate-500">{fmtDay(d)}</h4>
+            <Sortable ids={list.map((e) => e.id)} label={(id) => trip.events.find((e) => e.id === id)?.title ?? ''} onMove={p.onReorderDay}>
+              <ol className="mt-1 flex flex-col gap-1">
+                {list.map((e, i) => (
+                  <SubStep key={e.id} {...p} event={e} first={i === 0} last={i === list.length - 1} />
+                ))}
+              </ol>
+            </Sortable>
+          </section>
+        );
+      })}
+      {outside.length > 0 && (
+        <section aria-label={`${stop.name}, hors des dates`}>
+          <h4 className="text-xs font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-300">Hors des dates de l’étape</h4>
+          <ol className="mt-1 flex flex-col gap-1">
+            {outside.map((e) => (
+              <SubStep key={e.id} {...p} event={e} first last />
+            ))}
+          </ol>
+        </section>
+      )}
+    </div>
+  );
+}
+
+function SubStep(p: StopListProps & { stop: Stop; event: TripEvent; first: boolean; last: boolean }) {
+  const { event: e, trip, stop } = p;
+  const drag = useDrag(e.id);
+  const [icon, label] = EVENT_ICONS[e.kind];
+  return (
+    <li ref={drag.ref} style={drag.style} className={`flex flex-wrap items-center gap-x-1 rounded-xl text-sm ${drag.isDragging ? 'z-10 bg-blue-50 dark:bg-slate-800' : ''}`}>
+      <button type="button" className={`${btn.icon} cursor-grab touch-none text-slate-400`} aria-label={`Déplacer ${e.title}`} {...drag.handle}>
+        ⠿
+      </button>
+      <span className="min-w-0 flex-1 basis-40">
+        <span aria-hidden="true">{icon} </span>
+        <span className="sr-only">{label} : </span>
+        {e.time && <span className="tabular mr-1 text-slate-500">{e.time}</span>}
+        {e.title}
+      </span>
+      <span className="ml-auto flex items-center gap-1">
+      <button type="button" className={btn.icon} disabled={p.first} onClick={() => p.onMoveEvent(e.id, -1)} aria-label={`Monter ${e.title}`}>
+        ↑
+      </button>
+      <button type="button" className={btn.icon} disabled={p.last} onClick={() => p.onMoveEvent(e.id, 1)} aria-label={`Descendre ${e.title}`}>
+        ↓
+      </button>
+      {trip.stopOrder.length > 1 && (
+        <select
+          className={`${field} w-auto max-w-32 text-xs`}
+          aria-label={`Transférer ${e.title} vers une autre étape`}
+          value=""
+          onChange={(ev) => ev.target.value && p.onTransferEvent(e.id, ev.target.value)}
+        >
+          <option value="">Vers…</option>
+          {trip.stopOrder
+            .filter((id) => id !== stop.id)
+            .map((id) => (
+              <option key={id} value={id}>
+                {trip.stops[id]?.name}
+              </option>
+            ))}
+        </select>
+      )}
+      <button type="button" className={`${btn.icon} text-slate-500`} onClick={() => p.onRemoveEvent(e.id)} aria-label={`Supprimer ${e.title}`}>
+        ✕
+      </button>
+      </span>
     </li>
   );
 }

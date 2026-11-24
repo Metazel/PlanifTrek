@@ -115,7 +115,9 @@ describe('réorganisation (CU2)', () => {
     expect(trip.stopOrder).toEqual(['jer', 'net', 'eil']);
 
     const next = applyReorder(trip, p, newId);
-    expect(next.events).toBe(trip.events);
+    // La plongée (non réservée) suit Eilat d'un jour ; l'hôtel (réservé) ne bouge pas.
+    expect(next.events.find((e) => e.id === 'a-recif')?.date).toBe('2027-08-18');
+    expect(next.events.find((e) => e.id === 'h-eil')).toEqual(trip.events.find((e) => e.id === 'h-eil'));
     expect(next.transports.find((t) => t.id === 't-net-eil')?.status).toBe('a-verifier');
     expect(next.transports.filter((t) => t.status === 'brouillon')).toHaveLength(2);
     // Le décalage est détecté : l'hôtel d'Eilat ne colle plus à l'étape.
