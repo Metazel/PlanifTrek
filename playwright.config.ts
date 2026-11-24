@@ -8,7 +8,7 @@ export default defineConfig({
   retries: process.env.CI ? 1 : 0,
   reporter: process.env.CI ? [['list'], ['html', { open: 'never' }]] : 'list',
   use: {
-    baseURL: 'http://localhost:4173/planiftrek/',
+    baseURL: 'http://localhost:4173/PlanifTrek/',
     trace: 'retain-on-failure',
     // Poste local sans téléchargement de navigateur : PW_CHROME=/chemin/vers/chrome
     ...(process.env.PW_CHROME ? { launchOptions: { executablePath: process.env.PW_CHROME } } : {}),
@@ -19,7 +19,7 @@ export default defineConfig({
   ],
   webServer: {
     command: 'npm run preview',
-    url: 'http://localhost:4173/planiftrek/',
+    url: 'http://localhost:4173/PlanifTrek/',
     reuseExistingServer: !process.env.CI,
     timeout: 60_000,
   },
