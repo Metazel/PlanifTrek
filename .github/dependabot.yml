@@ -6,6 +6,10 @@ updates:
       interval: weekly
       day: monday
     open-pull-requests-limit: 5
+    ignore:
+      # Les types Node suivent la version de Node utilisée (22), pas la dernière publiée.
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
     groups:
       mineures-et-correctifs:
         update-types: [minor, patch]

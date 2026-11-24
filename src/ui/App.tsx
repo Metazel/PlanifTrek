@@ -1,105 +1,97 @@
-import { useMemo, useState } from 'react';
-import { checkTrip, daysOfStop, describeAlert } from '../domain/coherence';
-import { israelTrip } from '../domain/fixtures';
-import type { Trip } from '../domain/types';
+import { useEffect, useState } from 'react';
+import { useStore } from '../state/store';
+import { ConsentScreen } from './ConsentScreen';
+import { btn, Dialog } from './Dialog';
+import { TripEditor } from './TripEditor';
+import { TripList } from './TripList';
 
-/**
- * Coquille de l'incrément 1. Le voyage d'exemple est chargé en mémoire uniquement :
- * rien n'est stocké sur l'appareil tant que le consentement n'est pas recueilli
- * (écran de consentement : prochaine itération).
- */
 export function App() {
-  const [trip, setTrip] = useState<Trip | null>(null);
-  const alerts = useMemo(() => (trip ? checkTrip(trip) : []), [trip]);
+  const { mode, current, notice, init, acceptStorage, tryWithoutSaving, eraseAll, dismissNotice } = useStore();
+  const [ready, setReady] = useState(false);
+  const [erasing, setErasing] = useState(false);
+
+  useEffect(() => {
+    void init().finally(() => setReady(true));
+  }, [init]);
+
+  useEffect(() => {
+    document.title = current ? `${current.present.name} · PlanifTrek` : 'PlanifTrek';
+  }, [current]);
 
   return (
     <div className="mx-auto flex min-h-dvh max-w-5xl flex-col gap-6 p-4 md:p-8">
-      <header className="flex items-center justify-between">
+      <a href="#contenu" className="sr-only focus:not-sr-only">
+        Aller au contenu
+      </a>
+      <header className="flex flex-wrap items-center justify-between gap-2">
         <h1 className="text-2xl font-semibold tracking-tight">PlanifTrek</h1>
-        <span className="rounded-full border border-slate-200 px-3 py-1 text-sm text-slate-600 dark:border-slate-700 dark:text-slate-300">
-          Version de développement
-        </span>
+        {mode !== 'inconnu' && (
+          <div className="flex items-center gap-2 text-sm">
+            <span className="rounded-full border border-slate-300 px-3 py-1 text-slate-700 dark:border-slate-600 dark:text-slate-300">
+              {mode === 'local' ? '💾 Enregistré sur cet appareil' : '⏳ Essai : rien n’est enregistré'}
+            </span>
+            <button type="button" className={btn.secondary} onClick={() => setErasing(true)}>
+              Mes données
+            </button>
+          </div>
+        )}
       </header>
 
-      <main className="flex flex-col gap-6">
-        {!trip ? (
-          <section
-            aria-labelledby="vide"
-            className="rounded-2xl border border-slate-200 bg-white p-8 shadow-sm dark:border-slate-800 dark:bg-slate-900"
-          >
-            <h2 id="vide" className="text-lg font-medium">
-              Aucun voyage
-            </h2>
-            <p className="mt-2 text-slate-600 dark:text-slate-300">
-              Chargez le circuit d'exemple pour découvrir l'itinéraire et les contrôles de cohérence. Rien n'est
-              enregistré sur cet appareil.
-            </p>
-            <button
-              type="button"
-              onClick={() => setTrip(israelTrip())}
-              className="mt-4 rounded-xl bg-slate-900 px-4 py-2 font-medium text-white hover:bg-slate-700 dark:bg-white dark:text-slate-900"
-            >
-              Charger l'exemple
-            </button>
-          </section>
-        ) : (
-          <>
-            <section aria-labelledby="itineraire">
-              <h2 id="itineraire" className="mb-3 text-lg font-medium">
-                {trip.name}
-              </h2>
-              <ol className="flex flex-col gap-3">
-                {trip.stopOrder.map((id, i) => {
-                  const s = trip.stops[id];
-                  if (!s) return null;
-                  const events = trip.events.filter((e) => e.stopId === id);
-                  return (
-                    <li
-                      key={id}
-                      className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900"
-                    >
-                      <div className="flex items-baseline justify-between gap-2">
-                        <h3 className="font-medium">
-                          <span className="tabular mr-2 text-slate-500">{i + 1}.</span>
-                          {s.name}
-                        </h3>
-                        <p className="tabular text-sm text-slate-600 dark:text-slate-300">
-                          {s.arrival} → {s.departure} · {daysOfStop(s).length} jour(s)
-                        </p>
-                      </div>
-                      {events.length > 0 && (
-                        <ul className="mt-2 text-sm text-slate-700 dark:text-slate-300">
-                          {events.map((e) => (
-                            <li key={e.id}>{e.title}</li>
-                          ))}
-                        </ul>
-                      )}
-                    </li>
-                  );
-                })}
-              </ol>
-            </section>
+      {notice && (
+        <div role="status" className="flex items-start justify-between gap-3 rounded-2xl border border-amber-300 bg-amber-50 p-3 text-amber-900 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-200">
+          <p>{notice}</p>
+          <button type="button" className={btn.icon} onClick={dismissNotice} aria-label="Fermer le message">
+            ✕
+          </button>
+        </div>
+      )}
 
-            <section aria-labelledby="alertes" aria-live="polite">
-              <h2 id="alertes" className="mb-2 text-lg font-medium">
-                Contrôles
-              </h2>
-              {alerts.length === 0 ? (
-                <p className="text-emerald-700 dark:text-emerald-400">✓ Aucune incohérence détectée.</p>
-              ) : (
-                <ul className="list-disc pl-5 text-amber-800 dark:text-amber-300">
-                  {alerts.map((a, i) => (
-                    <li key={i}>{describeAlert(a, trip)}</li>
-                  ))}
-                </ul>
-              )}
-            </section>
-          </>
+      <main id="contenu" className="flex flex-col gap-6">
+        {!ready ? (
+          <p>Chargement…</p>
+        ) : mode === 'inconnu' ? (
+          <ConsentScreen onAccept={() => void acceptStorage()} onTry={tryWithoutSaving} />
+        ) : current ? (
+          <TripEditor trip={current.present} />
+        ) : (
+          <TripList />
         )}
       </main>
 
-      <footer className="mt-auto text-sm text-slate-500">
-        Données stockées uniquement sur cet appareil. Code source sous licence MIT.
+      <Dialog
+        open={erasing}
+        title="Mes données"
+        onClose={() => setErasing(false)}
+        actions={
+          <>
+            <button type="button" className={btn.secondary} onClick={() => setErasing(false)}>
+              Fermer
+            </button>
+            <button
+              type="button"
+              className={btn.danger}
+              onClick={() => {
+                void eraseAll();
+                setErasing(false);
+              }}
+            >
+              Effacer toutes mes données
+            </button>
+          </>
+        }
+      >
+        <p>
+          {mode === 'local'
+            ? 'Vos voyages sont enregistrés uniquement dans ce navigateur, sur cet appareil. Rien n’est envoyé à un serveur.'
+            : 'Mode essai : vos voyages ne sont gardés que tant que la page est ouverte.'}
+        </p>
+        <p className="mt-2">
+          « Effacer toutes mes données » supprime définitivement tous les voyages et votre choix d’enregistrement sur cet appareil.
+        </p>
+      </Dialog>
+
+      <footer className="mt-auto text-sm text-slate-600 dark:text-slate-400">
+        Données stockées uniquement sur cet appareil, après votre accord. Aucun traceur. Code source sous licence MIT.
       </footer>
     </div>
   );

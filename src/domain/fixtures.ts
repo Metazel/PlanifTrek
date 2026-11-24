@@ -12,11 +12,11 @@ const stop = (id: string, name: string, arrival: string, departure: string, kind
   departure,
 });
 
-const hotel = (id: string, stopId: string, checkIn: string, checkOut: string): TripEvent => ({
+const hotel = (id: string, stopId: string, title: string, checkIn: string, checkOut: string): TripEvent => ({
   id,
   stopId,
   kind: 'hebergement',
-  title: `Hôtel ${stopId}`,
+  title,
   checkIn,
   checkOut,
   paymentStatus: 'paye',
@@ -37,9 +37,9 @@ export function israelTrip(): Trip {
       tlv: stop('tlv', 'Tel Aviv', '2027-08-08', '2027-08-10'),
     },
     events: [
-      hotel('h-jer', 'jer', '2027-08-10', '2027-08-13'),
-      hotel('h-net', 'net', '2027-08-13', '2027-08-16'),
-      hotel('h-eil', 'eil', '2027-08-16', '2027-08-19'),
+      hotel('h-jer', 'jer', 'Hôtel à Jérusalem', '2027-08-10', '2027-08-13'),
+      hotel('h-net', 'net', 'Appartement à Netanya', '2027-08-13', '2027-08-16'),
+      hotel('h-eil', 'eil', 'Hôtel à Eilat', '2027-08-16', '2027-08-19'),
       { id: 'a-kotel', stopId: 'jer', kind: 'visite', title: 'Mur occidental', date: '2027-08-11' },
       { id: 'a-yad', stopId: 'jer', kind: 'visite', title: 'Yad Vashem', date: '2027-08-12' },
       { id: 'f-cousins', stopId: 'net', kind: 'famille', title: 'Dîner chez les cousins', date: '2027-08-14' },
