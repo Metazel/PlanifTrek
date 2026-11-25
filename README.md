@@ -30,7 +30,7 @@ Planificateur de voyage sur mesure, utilisable hors ligne : les étapes datées,
 - **Hébergement** : chaque étape indique ses nuits non couvertes et propose « Ajouter un hébergement » pré-rempli.
 - **Sous-étapes** : repas, déplacement, visite, activité, famille, événement (soirée, mariage), temps libre, avec heure facultative ; classées par journée, réorganisables (glisser-déposer ou ↑ ↓) et transférables vers une autre étape.
 - **Trajets** : entre deux étapes, « + Trajet » puis mode (avion, train, voiture, bus, taxi, marche), lieux et horaires de départ et d'arrivée en heure locale, durée calculée, n° de vol ou de réservation, prix et devise, statut de paiement, « à prévoir » ou « réservé ». Les trajets devenus hors circuit après une réorganisation sont listés pour être gardés ou retirés.
-- **Carte** : à droite sur grand écran, à afficher sur téléphone ; épingles numérotées dans l'ordre du circuit, trajets tracés (pointillés pour l'avion), cadrage automatique. Chargée à part, seulement quand elle s'affiche. Les étapes sans position sont listées sous la carte.
+- **Carte** : fond OpenFreeMap avec les noms en français, en langue locale ou en anglais (repli automatique sur les tuiles OpenStreetMap) ; à droite sur grand écran, à afficher sur téléphone ; épingles numérotées dans l'ordre du circuit, trajets tracés (pointillés pour l'avion), cadrage automatique. Chargée à part, seulement quand elle s'affiche. Les étapes sans position sont listées sous la carte.
 - **Recherche de lieu** : bouton « Chercher » (Nominatim, sur clic, 1 requête/s, résultats gardés), jamais pour une visite famille ; en cas de panne, saisie libre.
 - **Réorganiser** : glisser-déposer à la souris, au doigt ou au clavier (Espace, flèches, Espace), boutons monter et descendre ; aperçu avant d'appliquer ; « Fermer la boucle ».
 - **Annuler / Rétablir** : boutons et Ctrl+Z, Ctrl+Maj+Z (50 niveaux).
@@ -73,10 +73,10 @@ e2e/        recette navigateur (Playwright : parcours, accessibilité, CSP)
 
 - Dépendances d'exécution : React, Dexie, Zod, Zustand, dnd-kit, MapLibre GL, versions figées. `npm audit` : 0 vulnérabilité.
 - Toute donnée relue (stockage, futur fichier importé) est revalidée par un schéma strict : identifiants restreints, tailles bornées, dates et fuseaux vérifiés ; une donnée altérée est écartée et signalée. Textes saisis nettoyés (caractères de contrôle et de direction retirés, longueur bornée).
-- CSP stricte injectée au build (`script-src 'self'`, `object-src 'none'`, `connect-src` limité à `nominatim.openstreetmap.org` et `tile.openstreetmap.org` ; recette sans aucun appel réel à ces services (réponses simulées)), pas de `unsafe-inline`.
+- CSP stricte injectée au build (`script-src 'self'`, `object-src 'none'`, `connect-src` limité à `nominatim.openstreetmap.org`, `tiles.openfreemap.org` et `tile.openstreetmap.org` ; recette sans aucun appel réel à ces services (réponses simulées)), pas de `unsafe-inline`.
 - Aucun HTML injecté : `innerHTML` et `dangerouslySetInnerHTML` interdits par le lint.
 - Stockage local seulement après consentement explicite, effacement total à tout instant. Pas de pièces d'identité. Les adresses privées des étapes famille ne sont jamais envoyées à un service tiers et sont exclues des exports Google Maps par défaut. Aucun traceur, aucune mesure d'audience.
-- Services tiers : tuiles OpenStreetMap en consultation interactive (téléchargement pour le hors-ligne interdit par leur politique, d'où le pack carte Protomaps), Nominatim sur clic seulement (1 requête par seconde au plus, résultats gardés, attribution), liens Google Maps générés à la demande.
+- Services tiers : fond de carte OpenFreeMap (gratuit, sans clé, sans cookie), tuiles OpenStreetMap en repli et en consultation interactive (téléchargement pour le hors-ligne interdit par leur politique, d'où le pack carte Protomaps), Nominatim sur clic seulement (1 requête par seconde au plus, résultats gardés, attribution), liens Google Maps générés à la demande.
 
 ## Mise en ligne
 
@@ -99,4 +99,4 @@ Le workflow `.github/workflows/pages.yml` publie le site à chaque fusion sur `m
 - Trajets estimés à vol d'oiseau : pas de calcul d'itinéraire routier.
 - Taux de change saisis à la main.
 
-Cartes © OpenStreetMap contributors. Application indépendante, non affiliée aux services cités. Licence MIT.
+Cartes © OpenFreeMap, © OpenMapTiles, © OpenStreetMap contributors. Application indépendante, non affiliée aux services cités. Licence MIT.

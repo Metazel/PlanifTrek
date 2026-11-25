@@ -1,4 +1,5 @@
-import { expect, test, type Page } from '@playwright/test';
+import type { Page } from '@playwright/test';
+import { expect, test } from './fixtures';
 import AxeBuilder from '@axe-core/playwright';
 
 async function start(page: Page) {
@@ -165,7 +166,10 @@ test.describe('Itinéraire (CU1, CU2, CU4)', () => {
       calls++;
       return calls === 1
         ? route.fulfill({
-            json: [{ lat: '31.7788', lon: '35.2257', name: 'Jérusalem', display_name: 'Jérusalem, District de Jérusalem, Israël', address: { country_code: 'il' } }],
+            json: [
+              { lat: '31.7788', lon: '35.2257', name: 'Jérusalem', display_name: 'Jérusalem, District de Jérusalem, Israël', address: { country_code: 'il' } },
+              { lat: '38.1', lon: '-89.6', name: 'Jerusalem', display_name: 'Jerusalem, Illinois, États-Unis', address: { country_code: 'us' } },
+            ],
           })
         : route.fulfill({ status: 503, body: 'indisponible' });
     });
@@ -175,6 +179,10 @@ test.describe('Itinéraire (CU1, CU2, CU4)', () => {
     await form.getByLabel('Fuseau horaire').selectOption('Europe/Paris');
     await form.getByLabel('Nom de l’étape').fill('jerusalem');
     await form.getByRole('button', { name: 'Chercher' }).click();
+    // Valider sans choisir : l'appli demande de choisir.
+    await form.getByRole('button', { name: 'Ajouter l’étape' }).click();
+    await expect(form.getByRole('alert')).toContainText('Choisissez un lieu dans la liste');
+    await expect(form.getByText('Choisissez le lieu correspondant :')).toBeVisible();
     await form.getByRole('button', { name: /Jérusalem, District/ }).click();
     await expect(form.getByLabel(/Nom de l’étape/)).toHaveValue('Jérusalem');
     await expect(form.getByLabel('Fuseau horaire')).toHaveValue('Asia/Jerusalem');

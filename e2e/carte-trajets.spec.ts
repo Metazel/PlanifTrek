@@ -1,11 +1,12 @@
-import { expect, test, type Page } from '@playwright/test';
+import type { Page } from '@playwright/test';
+import { expect, test } from './fixtures';
 import AxeBuilder from '@axe-core/playwright';
 
-// Les tests n'interrogent jamais les vrais serveurs de tuiles : image vide simulée.
-const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64');
 
 async function example(page: Page) {
-  await page.route('https://tile.openstreetmap.org/**', (r) => r.fulfill({ body: PNG, contentType: 'image/png' }));
+  page.on('console', (m) => {
+    if (m.type() === 'error' && /worker/i.test(m.text())) throw new Error(m.text());
+  });
   await page.goto('./');
   await page.getByRole('button', { name: 'Enregistrer mes voyages sur cet appareil' }).click();
   await page.getByRole('button', { name: "Charger l'exemple" }).click();
@@ -55,6 +56,8 @@ test.describe('Trajets (CU3) et carte', () => {
     await expect(markers).toHaveCount(3, { timeout: 15_000 });
     await expect(markers.first()).toHaveText('1');
     await expect(page.locator('[data-trajets]')).toHaveAttribute('data-trajets', '2', { timeout: 15_000 });
+    // Les traits sont réellement dessinés (le calcul passe par le « worker » de MapLibre).
+    await expect(page.locator('[data-traces]')).not.toHaveAttribute('data-traces', '0', { timeout: 15_000 });
     // Toutes les épingles tiennent dans le cadre de la carte (cadrage automatique).
     await page.locator('[data-trajets]').scrollIntoViewIfNeeded();
     const frame = await page.locator('[data-trajets]').boundingBox();
@@ -63,6 +66,8 @@ test.describe('Trajets (CU3) et carte', () => {
       expect(frame && b && b.x >= frame.x && b.y >= frame.y && b.x + b.width <= frame.x + frame.width && b.y + b.height <= frame.y + frame.height).toBe(true);
     }
     await expect(page.getByText('La liste des étapes décrit le même parcours que la carte')).toBeVisible();
+    await expect(page.getByLabel('Noms')).toHaveValue('fr');
+    await page.getByLabel('Noms').selectOption('local');
     const { violations } = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze();
     expect(violations.filter((v) => v.impact === 'critical' || v.impact === 'serious')).toEqual([]);
   });
