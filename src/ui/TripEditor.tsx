@@ -119,6 +119,7 @@ export function TripEditor({ trip }: { trip: Trip }) {
           onAddTransport={(from, to) => update((t) => addTransport(t, newId(), from, to))}
           onUpdateTransport={(id, input) => update((t) => updateTransport(t, id, input))}
           onRemoveTransport={(id) => update((t) => removeTransport(t, id))}
+          onAlign={(fn) => update(fn)}
         />
         <div className="mt-3 rounded-2xl border border-dashed border-slate-300 p-4 dark:border-slate-700">
           {adding ? (

@@ -188,6 +188,17 @@ test.describe('Itinéraire (CU1, CU2, CU4)', () => {
     await expect(form.getByRole('button', { name: 'Chercher' })).toHaveCount(0);
   });
 
+  test('hébergement plus long que l’étape : réajustement en un clic', async ({ page }) => {
+    await start(page);
+    await page.getByRole('button', { name: "Charger l'exemple" }).click();
+    await page.getByRole('button', { name: 'Une nuit de moins à Jérusalem' }).click();
+    const jer = page.getByRole('listitem').filter({ has: page.getByRole('heading', { name: /Jérusalem/ }) }).first();
+    await expect(jer).toContainText('Dates différentes de l’étape');
+    await jer.getByRole('button', { name: 'Ajuster l’étape à l’hébergement' }).click();
+    await expect(jer).toContainText('10 août → 13 août · 4 jour(s), 3 nuits');
+    await expect(jer).not.toContainText('Dates différentes');
+  });
+
   test('éditeur sans anomalie d’accessibilité critique ou sérieuse', async ({ page }) => {
     await start(page);
     await page.getByRole('button', { name: "Charger l'exemple" }).click();

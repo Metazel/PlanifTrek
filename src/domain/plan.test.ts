@@ -105,3 +105,24 @@ describe('trajets (CU3)', () => {
     expect(checkTrip(t).some((a) => a.kind === 'trajet-a-verifier')).toBe(true);
   });
 });
+
+import { alignLodgingToStop, alignStopToLodging } from './plan';
+
+describe('réajustement étape ↔ hébergement', () => {
+  const longer = () => {
+    const t = israelTrip();
+    t.events = t.events.map((e) => (e.id === 'h-jer' ? { ...e, checkOut: '2027-08-15' } : e));
+    return t;
+  };
+  it('l’étape prend les dates de l’hôtel, les suivantes glissent, plus aucune alerte de dates', () => {
+    const t = alignStopToLodging(longer(), 'h-jer');
+    expect(t.stops.jer).toMatchObject({ arrival: '2027-08-10', departure: '2027-08-15' });
+    expect(t.stops.net).toMatchObject({ arrival: '2027-08-15', departure: '2027-08-18' });
+    expect(checkTrip(t).some((a) => a.kind === 'hebergement-hors-etape' && a.eventId === 'h-jer')).toBe(false);
+  });
+  it('l’hôtel prend les dates de l’étape ; refuse un non-hébergement', () => {
+    const t = alignLodgingToStop(longer(), 'h-jer');
+    expect(t.events.find((e) => e.id === 'h-jer')).toMatchObject({ checkIn: '2027-08-10', checkOut: '2027-08-13' });
+    expect(alignStopToLodging(israelTrip(), 'a-kotel')).toEqual(israelTrip());
+  });
+});
