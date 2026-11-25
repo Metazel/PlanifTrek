@@ -40,7 +40,7 @@ sur l'appareil, aucun serveur. Un seul utilisateur prépare et pilote le voyage 
 - `npm run e2e` (local sans téléchargement de navigateur : `PW_CHROME=/usr/bin/google-chrome npm run e2e`)
 
 ## Incréments
-1. Noyau : itinéraire, réorganisation, cohérence, carte en ligne ← en cours
-2. Hors ligne, vue Aujourd'hui, relais PC → téléphone, exports
+1. Noyau : itinéraire, réorganisation, cohérence, carte en ligne ✓
+2. Hors ligne ← suivant :, vue Aujourd'hui, relais PC → téléphone, exports
 3. Budget et documents
 4. Import e-mail / PDF

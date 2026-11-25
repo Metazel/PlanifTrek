@@ -15,6 +15,8 @@ import { daysOfStop } from '../domain/coherence';
 import { diffDays } from '../domain/dates';
 import type { EventInput, StopInput } from '../domain/edit';
 import { uncoveredNights } from '../domain/plan';
+import { legOf, type TransportInput } from '../domain/transport';
+import { LegRow } from './Transport';
 import type { Id, Stop, Trip, TripEvent } from '../domain/types';
 import { btn, field } from './Dialog';
 import { EventForm, EVENT_ICONS, type EventPrefill } from './EventForm';
@@ -32,6 +34,9 @@ export interface StopListProps {
   onMoveEvent: (id: Id, dir: -1 | 1) => void;
   onReorderDay: (ids: Id[]) => void;
   onTransferEvent: (id: Id, stopId: Id) => void;
+  onAddTransport: (from: Id, to: Id) => void;
+  onUpdateTransport: (id: Id, input: TransportInput) => void;
+  onRemoveTransport: (id: Id) => void;
 }
 
 /** Liste triable : souris, doigt (appui court) et clavier (Espace, flèches, Espace), avec annonces en français. */
@@ -109,6 +114,9 @@ function StopCard(p: StopListProps & { stop: Stop; index: number }) {
     setPrefill(pf);
     setMode('add');
   };
+  const nextId = trip.stopOrder[index + 1];
+  const next = nextId ? trip.stops[nextId] : undefined;
+  const leg = next ? legOf(trip, stop.id, next.id) : undefined;
   const hours = [stop.arrivalTime && `arrivée ${stop.arrivalTime}`, stop.departureTime && `départ ${stop.departureTime}`].filter(Boolean).join(', ');
 
   return (
@@ -233,6 +241,17 @@ function StopCard(p: StopListProps & { stop: Stop; index: number }) {
             Supprimer l’étape
           </button>
         </div>
+      )}
+      {next && (
+        <LegRow
+          trip={trip}
+          from={stop}
+          to={next}
+          {...(leg ? { transport: leg } : {})}
+          onAdd={() => p.onAddTransport(stop.id, next.id)}
+          onSave={(input) => leg && p.onUpdateTransport(leg.id, input)}
+          onRemove={() => leg && p.onRemoveTransport(leg.id)}
+        />
       )}
     </li>
   );

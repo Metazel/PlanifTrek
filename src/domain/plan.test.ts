@@ -72,3 +72,36 @@ describe('sous-étapes', () => {
     expect(ids(t, 'jer')).not.toContain('diner');
   });
 });
+
+import { addTransport, legOf, removeTransport, transportMinutes, updateTransport, validateTransport } from './transport';
+
+describe('trajets (CU3)', () => {
+  it('durée calculée avec les fuseaux ; référence nettoyée', () => {
+    let t = addTransport(israelTrip(), 'v', 'net', 'eil');
+    t = updateTransport(t, 'v', {
+      mode: 'avion',
+      status: 'reserve',
+      departure: { place: 'Tel Aviv TLV', at: '2027-08-16T07:00', timeZone: 'Asia/Jerusalem' },
+      arrival: { place: 'Eilat ETM', at: '2027-08-16T08:05', timeZone: 'Asia/Jerusalem' },
+      bookingRef: ' LY‮123 ',
+      price: { amountMinor: 39000, currency: 'ILS' },
+    });
+    const v = t.transports.find((x) => x.id === 'v');
+    expect(v && transportMinutes(v)).toBe(65);
+    expect(v?.bookingRef).toBe('LY 123');
+    expect(legOf(t, 'net', 'eil')?.id).toBe('t-net-eil');
+    expect(removeTransport(t, 'v').transports.some((x) => x.id === 'v')).toBe(false);
+  });
+  it('refuse une arrivée avant le départ ; étape inconnue', () => {
+    const bad = { mode: 'train' as const, status: 'reserve' as const, departure: { place: 'a', at: '2027-08-13T12:00', timeZone: 'Asia/Jerusalem' }, arrival: { place: 'b', at: '2027-08-13T11:00', timeZone: 'Asia/Jerusalem' } };
+    expect(validateTransport(bad)).toEqual(['arrivee-avant-depart']);
+    expect(() => updateTransport(israelTrip(), 't-jer-net', bad)).toThrow(RangeError);
+    expect(() => addTransport(israelTrip(), 'x', 'jer', 'nope')).toThrow(RangeError);
+    expect(validateTransport({ mode: 'bus', status: 'brouillon' })).toEqual([]);
+  });
+  it('signale un trajet à vérifier', () => {
+    const t = israelTrip();
+    t.transports[0] = { ...t.transports[0]!, status: 'a-verifier' };
+    expect(checkTrip(t).some((a) => a.kind === 'trajet-a-verifier')).toBe(true);
+  });
+});

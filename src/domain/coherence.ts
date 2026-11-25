@@ -1,4 +1,5 @@
 import { daysBetween, diffDays, nightsBetween } from './dates';
+import { travelDuration } from './time';
 import type { Id, ISODate, Stop, Trip, TripEvent } from './types';
 
 export type Alert =
@@ -9,7 +10,9 @@ export type Alert =
   | { kind: 'hebergements-chevauchants'; night: ISODate; eventIds: Id[] }
   | { kind: 'hebergement-hors-etape'; eventId: Id; stopId: Id }
   | { kind: 'activite-hors-dates'; eventId: Id; stopId: Id }
-  | { kind: 'rattachement-inconnu'; eventId: Id };
+  | { kind: 'rattachement-inconnu'; eventId: Id }
+  | { kind: 'trajet-a-verifier'; transportId: Id }
+  | { kind: 'trajet-incoherent'; transportId: Id };
 
 const isLodging = (e: TripEvent) => e.kind === 'hebergement' && !!e.checkIn && !!e.checkOut;
 
@@ -49,7 +52,13 @@ export function checkTrip(trip: Trip): Alert[] {
     }
   }
 
-  // 3. Chaque nuit du voyage : exactement un hébergement.
+  // 3. Trajets devenus inutiles ou aux horaires impossibles.
+  for (const t of trip.transports) {
+    if (t.status === 'a-verifier') alerts.push({ kind: 'trajet-a-verifier', transportId: t.id });
+    if (t.departure && t.arrival && !travelDuration(t.departure, t.arrival).ok) alerts.push({ kind: 'trajet-incoherent', transportId: t.id });
+  }
+
+  // 4. Chaque nuit du voyage : exactement un hébergement.
   if (ordered.length) {
     const start = ordered.map((s) => s.arrival).reduce((a, b) => (a < b ? a : b));
     const end = ordered.map((s) => s.departure).reduce((a, b) => (a > b ? a : b));
@@ -92,5 +101,11 @@ export function describeAlert(a: Alert, trip: Trip): string {
       return `« ${title(a.eventId)} » est hors des dates de ${name(a.stopId)}.`;
     case 'rattachement-inconnu':
       return `« ${title(a.eventId)} » n'est rattaché à aucune étape.`;
+    case 'trajet-a-verifier':
+    case 'trajet-incoherent': {
+      const t = trip.transports.find((x) => x.id === a.transportId);
+      const leg = t ? `${name(t.fromStopId)} → ${name(t.toStopId)}` : 'trajet';
+      return a.kind === 'trajet-a-verifier' ? `Trajet réservé ${leg} : ne correspond plus au circuit, à vérifier ou annuler.` : `Trajet ${leg} : l'arrivée est avant le départ.`;
+    }
   }
 }
