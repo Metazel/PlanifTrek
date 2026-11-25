@@ -1,5 +1,6 @@
 import { daysBetween, diffDays, nightsBetween } from './dates';
 import { travelDuration } from './time';
+import { nightInTransit } from './plan';
 import type { Id, ISODate, Stop, Trip, TripEvent } from './types';
 
 export type Alert =
@@ -65,7 +66,9 @@ export function checkTrip(trip: Trip): Alert[] {
     const lodgings = trip.events.filter((e) => isLodging(e) && trip.stops[e.stopId]);
     for (const night of nightsBetween(start, end)) {
       const covering = lodgings.filter((e) => (e.checkIn as ISODate) <= night && night < (e.checkOut as ISODate));
-      if (covering.length === 0) alerts.push({ kind: 'nuit-sans-hebergement', night });
+      if (covering.length === 0) {
+        if (!nightInTransit(trip, night)) alerts.push({ kind: 'nuit-sans-hebergement', night });
+      }
       else if (covering.length > 1) {
         alerts.push({ kind: 'hebergements-chevauchants', night, eventIds: covering.map((e) => e.id) });
       }

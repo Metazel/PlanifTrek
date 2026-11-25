@@ -83,7 +83,7 @@ export interface TripEvent {
   point?: GeoPoint;
 }
 
-export type TransportMode = 'avion' | 'train' | 'voiture' | 'bus' | 'taxi' | 'marche';
+export type TransportMode = 'avion' | 'train' | 'voiture' | 'bus' | 'bateau' | 'taxi' | 'marche';
 
 /** brouillon : créé automatiquement ; reserve : confirmé ; a-verifier : devenu inutile après réorganisation. */
 export type TransportStatus = 'brouillon' | 'reserve' | 'a-verifier';
@@ -92,6 +92,7 @@ export interface TransportEndpoint {
   place: string;
   at: LocalDateTime;
   timeZone: string;
+  point?: GeoPoint;
 }
 
 export interface Transport {

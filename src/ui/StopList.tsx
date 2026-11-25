@@ -38,6 +38,7 @@ export interface StopListProps {
   onUpdateTransport: (id: Id, input: TransportInput) => void;
   onRemoveTransport: (id: Id) => void;
   onAlign: (fn: (t: Trip) => Trip) => void;
+  onUpdateEvent: (id: Id, input: EventInput) => void;
 }
 
 /** Liste triable : souris, doigt (appui court) et clavier (Espace, flèches, Espace), avec annonces en français. */
@@ -103,8 +104,13 @@ const KIND_ICON = { ville: '', famille: '👪 ', passage: '🚏 ' } as const;
 function StopCard(p: StopListProps & { stop: Stop; index: number }) {
   const { stop, index, trip } = p;
   const drag = useDrag(stop.id);
-  const [mode, setMode] = useState<'view' | 'edit' | 'add'>('view');
+  const [mode, setMode] = useState<'view' | 'edit' | 'add' | 'event'>('view');
   const [prefill, setPrefill] = useState<EventPrefill>({});
+  const [editing, setEditing] = useState<TripEvent | null>(null);
+  const editEvent = (e: TripEvent) => {
+    setEditing(e);
+    setMode('event');
+  };
   const n = Math.max(0, diffDays(stop.arrival, stop.departure));
   const last = trip.stopOrder.length - 1;
   const move = (to: number) => p.onReorder(arrayMove(trip.stopOrder, index, to));
@@ -180,9 +186,14 @@ function StopCard(p: StopListProps & { stop: Stop; index: number }) {
                   {e.checkIn && fmtDate(e.checkIn)} → {e.checkOut && fmtDate(e.checkOut)}
                 </span>
               </span>
-              <button type="button" className={`${btn.icon} text-slate-500`} onClick={() => p.onRemoveEvent(e.id)} aria-label={`Supprimer ${e.title}`}>
-                ✕
-              </button>
+              <span className="flex">
+                <button type="button" className={`${btn.icon} text-slate-500`} onClick={() => editEvent(e)} aria-label={`Modifier ${e.title}`}>
+                  ✎
+                </button>
+                <button type="button" className={`${btn.icon} text-slate-500`} onClick={() => p.onRemoveEvent(e.id)} aria-label={`Supprimer ${e.title}`}>
+                  ✕
+                </button>
+              </span>
               {(e.checkIn !== stop.arrival || e.checkOut !== stop.departure) && (
                 <div className="flex w-full flex-wrap gap-2 text-amber-800 dark:text-amber-300">
                   <span>⚠ Dates différentes de l’étape.</span>
@@ -211,7 +222,7 @@ function StopCard(p: StopListProps & { stop: Stop; index: number }) {
         </div>
       )}
 
-      <Days {...p} events={mine.filter((e) => e.kind !== 'hebergement')} onAddOnDay={(date) => openAdd({ date })} />
+      <Days {...p} events={mine.filter((e) => e.kind !== 'hebergement')} onAddOnDay={(date) => openAdd({ date })} onEditEvent={editEvent} />
 
       {mode === 'edit' ? (
         <div className="mt-3">
@@ -235,6 +246,17 @@ function StopCard(p: StopListProps & { stop: Stop; index: number }) {
             onCancel={() => setMode('view')}
           />
         </div>
+      ) : mode === 'event' && editing ? (
+        <EventForm
+          trip={trip}
+          stop={stop}
+          initial={editing}
+          onSubmit={(input) => {
+            p.onUpdateEvent(editing.id, input);
+            setMode('view');
+          }}
+          onCancel={() => setMode('view')}
+        />
       ) : mode === 'add' ? (
         <EventForm
           trip={trip}
@@ -275,7 +297,7 @@ function StopCard(p: StopListProps & { stop: Stop; index: number }) {
 }
 
 /** Journées de l'étape et leurs sous-étapes, réorganisables et transférables. */
-function Days(p: StopListProps & { stop: Stop; events: TripEvent[]; onAddOnDay: (d: string) => void }) {
+function Days(p: StopListProps & { stop: Stop; events: TripEvent[]; onAddOnDay: (d: string) => void; onEditEvent: (e: TripEvent) => void }) {
   const { stop, events, trip } = p;
   const days = daysOfStop(stop);
   const outside = events.filter((e) => !e.date || !days.includes(e.date));
@@ -312,7 +334,7 @@ function Days(p: StopListProps & { stop: Stop; events: TripEvent[]; onAddOnDay: 
   );
 }
 
-function SubStep(p: StopListProps & { stop: Stop; event: TripEvent; first: boolean; last: boolean }) {
+function SubStep(p: StopListProps & { stop: Stop; event: TripEvent; first: boolean; last: boolean; onEditEvent: (e: TripEvent) => void }) {
   const { event: e, trip, stop } = p;
   const drag = useDrag(e.id);
   const [icon, label] = EVENT_ICONS[e.kind];
@@ -326,6 +348,7 @@ function SubStep(p: StopListProps & { stop: Stop; event: TripEvent; first: boole
         <span className="sr-only">{label} : </span>
         {e.time && <span className="tabular mr-1 text-slate-500">{e.time}</span>}
         {e.title}
+        {e.point && <span className="ml-1" title="placé sur la carte" aria-label="placé sur la carte">📍</span>}
       </span>
       <span className="ml-auto flex items-center gap-1">
       <button type="button" className={btn.icon} disabled={p.first} onClick={() => p.onMoveEvent(e.id, -1)} aria-label={`Monter ${e.title}`}>
@@ -351,6 +374,9 @@ function SubStep(p: StopListProps & { stop: Stop; event: TripEvent; first: boole
             ))}
         </select>
       )}
+      <button type="button" className={`${btn.icon} text-slate-500`} onClick={() => p.onEditEvent(e)} aria-label={`Modifier ${e.title}`}>
+        ✎
+      </button>
       <button type="button" className={`${btn.icon} text-slate-500`} onClick={() => p.onRemoveEvent(e.id)} aria-label={`Supprimer ${e.title}`}>
         ✕
       </button>

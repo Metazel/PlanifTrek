@@ -126,3 +126,24 @@ describe('réajustement étape ↔ hébergement', () => {
     expect(alignStopToLodging(israelTrip(), 'a-kotel')).toEqual(israelTrip());
   });
 });
+
+import { nightInTransit } from './plan';
+
+describe('nuit en transit (vol de 5 h)', () => {
+  it('chambre libérée le 19, vol le 20 à 5 h : la nuit du 19 n’exige pas d’hébergement', () => {
+    const t = israelTrip();
+    t.stops = { ...t.stops, eil: { ...t.stops.eil!, departure: '2027-08-20' } };
+    expect(checkTrip(t).filter((a) => a.kind === 'nuit-sans-hebergement')).toHaveLength(1);
+    t.transports.push({ id: 'retour', fromStopId: 'eil', toStopId: 'jer', mode: 'avion', status: 'reserve', departure: { place: 'Ramon ETM', at: '2027-08-20T05:00', timeZone: 'Asia/Jerusalem' } });
+    expect(nightInTransit(t, '2027-08-19')).toBe(true);
+    expect(checkTrip(t).filter((a) => a.kind === 'nuit-sans-hebergement')).toEqual([]);
+    expect(uncoveredNights(t, 'eil')).toEqual([]);
+  });
+  it('un départ à 11 h le lendemain ne couvre pas la nuit ; un trajet de nuit si', () => {
+    const t = israelTrip();
+    t.transports = [{ id: 'x', fromStopId: 'jer', toStopId: 'net', mode: 'bus', status: 'reserve', departure: { place: 'a', at: '2027-08-12T11:00', timeZone: 'Asia/Jerusalem' } }];
+    expect(nightInTransit(t, '2027-08-11')).toBe(false);
+    t.transports = [{ id: 'y', fromStopId: 'jer', toStopId: 'net', mode: 'train', status: 'reserve', departure: { place: 'a', at: '2027-08-11T15:00', timeZone: 'Asia/Jerusalem' }, arrival: { place: 'b', at: '2027-08-12T09:00', timeZone: 'Asia/Jerusalem' } }];
+    expect(nightInTransit(t, '2027-08-11')).toBe(true);
+  });
+});

@@ -4,12 +4,15 @@ import { formatDuration } from '../domain/time';
 import { transportMinutes, validateTransport, type TransportError, type TransportInput } from '../domain/transport';
 import type { PaymentStatus, Stop, Transport, TransportMode, TransportStatus, Trip } from '../domain/types';
 import { btn, field } from './Dialog';
+import { PlaceSearch } from './PlaceSearch';
+import type { GeoPoint } from '../domain/types';
 
 export const MODES: Record<TransportMode, [string, string]> = {
   avion: ['✈', 'Avion'],
   train: ['🚆', 'Train'],
   voiture: ['🚗', 'Voiture'],
   bus: ['🚌', 'Bus'],
+  bateau: ['⛴', 'Bateau'],
   taxi: ['🚕', 'Taxi / VTC'],
   marche: ['🚶', 'Marche'],
 };
@@ -127,16 +130,20 @@ function TransportForm({
   const [price, setPrice] = useState(transport.price ? String(transport.price.amountMinor / 100).replace('.', ',') : '');
   const [currency, setCurrency] = useState(transport.price?.currency ?? trip.baseCurrency);
   const [pay, setPay] = useState<PaymentStatus | ''>(transport.paymentStatus ?? '');
+  const [depPoint, setDepPoint] = useState<GeoPoint | undefined>(transport.departure?.point);
+  const [arrPoint, setArrPoint] = useState<GeoPoint | undefined>(transport.arrival?.point);
+  const [pending, setPending] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
+    if (pending) return;
     const amount = price.trim() ? parseAmount(price) : null;
     const input: TransportInput = {
       mode,
       status,
-      departure: { place: depPlace, at: depAt, timeZone: from.timeZone },
-      arrival: { place: arrPlace, at: arrAt, timeZone: to.timeZone },
+      departure: { place: depPlace, at: depAt, timeZone: from.timeZone, ...(depPoint ? { point: depPoint } : {}) },
+      arrival: { place: arrPlace, at: arrAt, timeZone: to.timeZone, ...(arrPoint ? { point: arrPoint } : {}) },
       ...(ref.trim() ? { bookingRef: ref } : {}),
       ...(amount !== null && amount >= 0 ? { price: { amountMinor: amount, currency } } : {}),
       ...(pay ? { paymentStatus: pay } : {}),
@@ -167,18 +174,24 @@ function TransportForm({
           <option value="reserve">Réservé</option>
         </select>
       </label>
-      <label className={L}>
-        Départ de (gare, aéroport, adresse)
-        <input className={field} value={depPlace} maxLength={120} onChange={(e) => setDepPlace(e.target.value)} />
-      </label>
+      <div className={L}>
+        <label className={L}>
+          Départ de (gare, aéroport, adresse)
+          <input className={field} value={depPlace} maxLength={120} onChange={(e) => { setDepPlace(e.target.value); setDepPoint(undefined); }} />
+        </label>
+          <PlaceSearch query={depPlace} point={depPoint} onPick={(p) => { setDepPlace(p.name); setDepPoint(p.point); }} onPending={setPending} />
+      </div>
       <label className={L}>
         Départ le ({from.timeZone})
         <input type="datetime-local" className={field} value={depAt} onChange={(e) => setDepAt(e.target.value)} />
       </label>
-      <label className={L}>
-        Arrivée à
-        <input className={field} value={arrPlace} maxLength={120} onChange={(e) => setArrPlace(e.target.value)} />
-      </label>
+      <div className={L}>
+        <label className={L}>
+          Arrivée à
+          <input className={field} value={arrPlace} maxLength={120} onChange={(e) => { setArrPlace(e.target.value); setArrPoint(undefined); }} />
+        </label>
+          <PlaceSearch query={arrPlace} point={arrPoint} onPick={(p) => { setArrPlace(p.name); setArrPoint(p.point); }} onPending={setPending} />
+      </div>
       <label className={L}>
         Arrivée le ({to.timeZone})
         <input type="datetime-local" className={field} value={arrAt} onChange={(e) => setArrAt(e.target.value)} />

@@ -186,7 +186,7 @@ test.describe('Itinéraire (CU1, CU2, CU4)', () => {
     await form.getByRole('button', { name: /Jérusalem, District/ }).click();
     await expect(form.getByLabel(/Nom de l’étape/)).toHaveValue('Jérusalem');
     await expect(form.getByLabel('Fuseau horaire')).toHaveValue('Asia/Jerusalem');
-    await expect(form).toContainText('lieu trouvé');
+    await expect(form).toContainText('placé sur la carte');
 
     await form.getByLabel(/Nom de l’étape/).fill('Eilat');
     await form.getByRole('button', { name: 'Chercher' }).click();
