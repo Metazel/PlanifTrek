@@ -161,11 +161,11 @@ export function TripEditor({ trip }: { trip: Trip }) {
         )}
       </section>
       <aside aria-labelledby="carte" className="flex flex-col gap-2 lg:sticky lg:top-4 lg:h-[calc(100dvh-2rem)]">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 id="carte" className="text-lg font-semibold">
             Carte
           </h2>
-          <label className="ml-auto mr-2 flex items-center gap-2 text-sm">
+          <label className="flex items-center gap-2 text-sm sm:ml-auto">
             Noms
             <select className={`${field} w-auto`} value={lang} onChange={(e) => setLang(e.target.value as MapLang)}>
               {Object.entries(MAP_LANGS).map(([k, l]) => (
@@ -187,8 +187,14 @@ export function TripEditor({ trip }: { trip: Trip }) {
           </div>
         )}
         <p className="text-sm text-slate-600 dark:text-slate-400">
-          La liste des étapes décrit le même parcours que la carte (épingles numérotées dans l’ordre ; pointillés : avion).
-          {noPoint.length > 0 && ` Sans position : ${noPoint.map((s) => s?.name).join(', ')} (bouton « Chercher » dans « Modifier »).`}
+          Même parcours que la liste des étapes : épingles numérotées dans l’ordre, ▶ départ (vert), ■ arrivée (rouge),
+          ⟲ départ et arrivée au même endroit ; traits du vert au rouge dans le sens du voyage, tirets pour l’avion.
+          {noPoint.length > 0 && (
+            <strong className="mt-1 block text-amber-800 dark:text-amber-300">
+              ⚠ Pas sur la carte : {noPoint.map((s) => s?.name).join(', ')}. Le trait gris pointillé saute ces étapes : utilisez
+              « 📍 placer » sur l’étape.
+            </strong>
+          )}
         </p>
       </aside>
       </div>

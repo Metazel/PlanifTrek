@@ -49,12 +49,24 @@ test.describe('Trajets (CU3) et carte', () => {
     await expect(off.getByRole('listitem')).toHaveCount(1);
   });
 
+  test('boucle : une seule épingle « 1 · 4 » marquée départ et arrivée', async ({ page }, info) => {
+    await example(page);
+    if (info.project.name === 'android') await page.getByRole('button', { name: 'Afficher la carte' }).click();
+    await page.getByRole('button', { name: '⟲ Fermer la boucle' }).click();
+    const markers = page.locator('.pt-marker');
+    await expect(markers).toHaveCount(3, { timeout: 15_000 });
+    await expect(markers.first()).toHaveText('1 · 4');
+    await expect(markers.first()).toHaveAttribute('aria-label', 'Départ et arrivée : 1. Jérusalem, 4. Jérusalem (retour)');
+    await expect(page.locator('[data-trajets]')).toHaveAttribute('data-trajets', '3', { timeout: 15_000 });
+  });
+
   test('carte : épingles numérotées des étapes, alternative textuelle', async ({ page }, info) => {
     await example(page);
     if (info.project.name === 'android') await page.getByRole('button', { name: 'Afficher la carte' }).click();
     const markers = page.locator('.pt-marker');
     await expect(markers).toHaveCount(3, { timeout: 15_000 });
     await expect(markers.first()).toHaveText('1');
+    await expect(markers.first()).toHaveClass(/pt-depart/);
     await expect(page.locator('[data-trajets]')).toHaveAttribute('data-trajets', '2', { timeout: 15_000 });
     // Les traits sont réellement dessinés (le calcul passe par le « worker » de MapLibre).
     await expect(page.locator('[data-traces]')).not.toHaveAttribute('data-traces', '0', { timeout: 15_000 });
@@ -65,7 +77,9 @@ test.describe('Trajets (CU3) et carte', () => {
       const b = await m.boundingBox();
       expect(frame && b && b.x >= frame.x && b.y >= frame.y && b.x + b.width <= frame.x + frame.width && b.y + b.height <= frame.y + frame.height).toBe(true);
     }
-    await expect(page.getByText('La liste des étapes décrit le même parcours que la carte')).toBeVisible();
+    await expect(page.getByText(/Même parcours que la liste des étapes/)).toBeVisible();
+    await expect(markers.first()).toHaveAttribute('aria-label', 'Départ : 1. Jérusalem');
+    await expect(markers.last()).toHaveAttribute('aria-label', 'Arrivée : 3. Eilat');
     await expect(page.getByLabel('Noms')).toHaveValue('fr');
     await page.getByLabel('Noms').selectOption('local');
     const { violations } = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze();
