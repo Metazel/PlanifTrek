@@ -6,6 +6,7 @@ import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
 
 maplibregl.setWorkerUrl(workerUrl);
 import type { Trip } from '../domain/types';
+import { mapModel, rankColor } from './mapModel';
 import { labelExpression, OPENFREEMAP_STYLE, OSM_RASTER, type MapLang } from './mapStyle';
 
 /**
@@ -73,33 +74,37 @@ export default function MapView({ trip, lang }: { trip: Trip; lang: MapLang }) {
   useEffect(() => {
     const m = map.current;
     if (!m) return;
-    const stops = trip.stopOrder.map((id) => trip.stops[id]).filter((s) => !!s);
+    const model = mapModel(trip);
     markers.current.forEach((mk) => mk.remove());
     markers.current = [];
     const bounds = new maplibregl.LngLatBounds();
-    stops.forEach((s, i) => {
-      if (!s.point) return;
+    const ROLE: Record<string, string> = { depart: 'Départ', arrivee: 'Arrivée', boucle: 'Départ et arrivée', etape: 'Étape' };
+    for (const p of model.pins) {
       const el = document.createElement('div');
-      el.className = 'pt-marker';
-      el.textContent = String(i + 1);
+      el.className = `pt-marker pt-${p.role}`;
+      el.textContent = p.numbers.join(' · ');
       el.setAttribute('role', 'img');
-      el.setAttribute('aria-label', `${i + 1}. ${s.name}`);
-      markers.current.push(new maplibregl.Marker({ element: el }).setLngLat([s.point.lon, s.point.lat]).addTo(m));
-      bounds.extend([s.point.lon, s.point.lat]);
-    });
-    const features = trip.transports.flatMap((t) => {
-      const a = trip.stops[t.fromStopId]?.point;
-      const b = trip.stops[t.toStopId]?.point;
-      return a && b ? [{ type: 'Feature' as const, properties: { air: t.mode === 'avion' }, geometry: { type: 'LineString' as const, coordinates: [[a.lon, a.lat], [b.lon, b.lat]] } }] : [];
-    });
+      el.setAttribute('aria-label', `${ROLE[p.role]} : ${p.numbers.map((n, i) => `${n}. ${p.names[i]}`).join(', ')}`);
+      el.title = p.names.join(' / ');
+      markers.current.push(new maplibregl.Marker({ element: el }).setLngLat([p.lon, p.lat]).addTo(m));
+      bounds.extend([p.lon, p.lat]);
+    }
+    const total = model.segments.length;
+    const features = model.segments.map((sg) => ({
+      type: 'Feature' as const,
+      properties: { kind: sg.kind, color: sg.kind === 'manquant' ? '#94a3b8' : rankColor(sg.rank, total) },
+      geometry: { type: 'LineString' as const, coordinates: [sg.from, sg.to] },
+    }));
     const draw = () => {
       const data = { type: 'FeatureCollection' as const, features };
       const src = m.getSource('legs') as maplibregl.GeoJSONSource | undefined;
       if (src) src.setData(data);
       else {
         m.addSource('legs', { type: 'geojson', data });
-        m.addLayer({ id: 'legs-ground', type: 'line', source: 'legs', filter: ['!', ['get', 'air']], paint: { 'line-color': '#2563eb', 'line-width': 3 } });
-        m.addLayer({ id: 'legs-air', type: 'line', source: 'legs', filter: ['get', 'air'], paint: { 'line-color': '#2563eb', 'line-width': 2, 'line-dasharray': [2, 2] } });
+        const color: maplibregl.ExpressionSpecification = ['get', 'color'];
+        m.addLayer({ id: 'legs-ground', type: 'line', source: 'legs', filter: ['==', ['get', 'kind'], 'sol'], layout: { 'line-cap': 'round' }, paint: { 'line-color': color, 'line-width': 4 } });
+        m.addLayer({ id: 'legs-air', type: 'line', source: 'legs', filter: ['==', ['get', 'kind'], 'avion'], paint: { 'line-color': color, 'line-width': 3, 'line-dasharray': [2, 2] } });
+        m.addLayer({ id: 'legs-gap', type: 'line', source: 'legs', filter: ['==', ['get', 'kind'], 'manquant'], paint: { 'line-color': color, 'line-width': 2, 'line-dasharray': [1, 2] } });
       }
     };
     const fit = () => {
@@ -112,7 +117,7 @@ export default function MapView({ trip, lang }: { trip: Trip; lang: MapLang }) {
       // Repères pour la recette : trajets fournis, puis trajets réellement dessinés.
       box.current?.setAttribute('data-trajets', String(features.length));
       m.once('idle', () => {
-        const drawn = m.queryRenderedFeatures({ layers: ['legs-ground', 'legs-air'] }).length;
+        const drawn = m.queryRenderedFeatures({ layers: ['legs-ground', 'legs-air', 'legs-gap'] }).length;
         box.current?.setAttribute('data-traces', String(drawn));
       });
     };
