@@ -14,7 +14,7 @@ import { useState, type ReactNode } from 'react';
 import { daysOfStop } from '../domain/coherence';
 import { diffDays } from '../domain/dates';
 import type { EventInput, StopInput } from '../domain/edit';
-import { uncoveredNights } from '../domain/plan';
+import { alignLodgingToStop, alignStopToLodging, uncoveredNights } from '../domain/plan';
 import { legOf, type TransportInput } from '../domain/transport';
 import { LegRow } from './Transport';
 import type { Id, Stop, Trip, TripEvent } from '../domain/types';
@@ -37,6 +37,7 @@ export interface StopListProps {
   onAddTransport: (from: Id, to: Id) => void;
   onUpdateTransport: (id: Id, input: TransportInput) => void;
   onRemoveTransport: (id: Id) => void;
+  onAlign: (fn: (t: Trip) => Trip) => void;
 }
 
 /** Liste triable : souris, doigt (appui court) et clavier (Espace, flèches, Espace), avec annonces en français. */
@@ -138,6 +139,11 @@ function StopCard(p: StopListProps & { stop: Stop; index: number }) {
           <p className="tabular text-sm text-slate-600 dark:text-slate-300">
             {stop.kind === 'passage' ? `Passage le ${fmtDate(stop.arrival)}` : `${fmtDate(stop.arrival)} → ${fmtDate(stop.departure)} · ${daysOfStop(stop).length} jour(s), ${nights(n)}`}
             {hours && ` · ${hours}`}
+            {!stop.point && (
+              <button type="button" className="ml-2 underline" onClick={() => setMode('edit')}>
+                📍 Pas sur la carte : placer
+              </button>
+            )}
             <span className="sr-only"> · fuseau {stop.timeZone}</span>
           </p>
         </div>
@@ -167,7 +173,7 @@ function StopCard(p: StopListProps & { stop: Stop; index: number }) {
       {(lodgings.length > 0 || missing.length > 0) && (
         <div className="mt-3 border-t border-slate-100 pt-3 text-sm dark:border-slate-800">
           {lodgings.map((e) => (
-            <div key={e.id} className="flex items-center justify-between gap-2">
+            <div key={e.id} className="flex flex-wrap items-center justify-between gap-2">
               <span>
                 🛏<span className="sr-only"> Hébergement :</span> {e.title}
                 <span className="tabular ml-2 text-slate-500">
@@ -177,6 +183,17 @@ function StopCard(p: StopListProps & { stop: Stop; index: number }) {
               <button type="button" className={`${btn.icon} text-slate-500`} onClick={() => p.onRemoveEvent(e.id)} aria-label={`Supprimer ${e.title}`}>
                 ✕
               </button>
+              {(e.checkIn !== stop.arrival || e.checkOut !== stop.departure) && (
+                <div className="flex w-full flex-wrap gap-2 text-amber-800 dark:text-amber-300">
+                  <span>⚠ Dates différentes de l’étape.</span>
+                  <button type="button" className={btn.secondary} onClick={() => p.onAlign((t) => alignStopToLodging(t, e.id))}>
+                    Ajuster l’étape à l’hébergement
+                  </button>
+                  <button type="button" className={btn.secondary} onClick={() => p.onAlign((t) => alignLodgingToStop(t, e.id))}>
+                    Ajuster l’hébergement à l’étape
+                  </button>
+                </div>
+              )}
             </div>
           ))}
           {missing.length > 0 && (

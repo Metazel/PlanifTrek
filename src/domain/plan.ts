@@ -97,3 +97,25 @@ export function transferEvent(trip: Trip, id: Id, stopId: Id, date?: ISODate): T
   const moved = { ...ev, stopId, date: day };
   return { ...trip, events: [...trip.events.filter((e) => e.id !== id), moved] };
 }
+
+/**
+ * « Ajuster l'étape à l'hébergement » : l'étape prend les dates de l'hébergement ;
+ * les étapes suivantes glissent d'autant (comme le bouton +/-).
+ */
+export function alignStopToLodging(trip: Trip, eventId: Id): Trip {
+  const e = trip.events.find((x) => x.id === eventId);
+  const stop = e && trip.stops[e.stopId];
+  if (!e || !stop || e.kind !== 'hebergement' || !e.checkIn || !e.checkOut) return trip;
+  const shifted = resizeStop(trip, stop.id, diffDays(stop.departure, e.checkOut));
+  const s = shifted.stops[stop.id];
+  if (!s || s.arrival === e.checkIn) return shifted;
+  return { ...shifted, stops: { ...shifted.stops, [stop.id]: { ...s, arrival: e.checkIn } } };
+}
+
+/** « Ajuster l'hébergement à l'étape » : l'hébergement prend les dates de l'étape. */
+export function alignLodgingToStop(trip: Trip, eventId: Id): Trip {
+  const e = trip.events.find((x) => x.id === eventId);
+  const stop = e && trip.stops[e.stopId];
+  if (!e || !stop || e.kind !== 'hebergement' || diffDays(stop.arrival, stop.departure) < 1) return trip;
+  return { ...trip, events: trip.events.map((x) => (x.id === eventId ? { ...x, checkIn: stop.arrival, checkOut: stop.departure } : x)) };
+}
