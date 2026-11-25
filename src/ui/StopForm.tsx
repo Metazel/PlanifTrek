@@ -41,6 +41,10 @@ export function StopForm({
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
+    if (places?.length) {
+      setSearchError('Choisissez un lieu dans la liste, ou « Garder ma saisie sans position ».');
+      return;
+    }
     const input: StopInput = passage ? { ...v, departure: v.arrival } : v;
     const errs = validateStop(input);
     setErrors(errs);
@@ -51,7 +55,10 @@ export function StopForm({
     setSearching(true);
     setSearchError('');
     try {
-      setPlaces(await searchPlace(v.name));
+      const found = await searchPlace(v.name);
+      // Un seul résultat : il est retenu directement.
+      if (found.length === 1 && found[0]) pick(found[0]);
+      else setPlaces(found);
     } catch (err) {
       setSearchError(`${err instanceof Error ? err.message : 'Recherche impossible'}. Saisissez le nom à la main.`);
     } finally {
@@ -60,6 +67,7 @@ export function StopForm({
   };
 
   const pick = (p: Place) => {
+    setSearchError('');
     setV((s) => ({ ...s, name: p.name, point: p.point, ...(p.timeZone ? { timeZone: p.timeZone } : {}) }));
     setPlaces(null);
   };
@@ -130,7 +138,9 @@ export function StopForm({
             {places.length === 0 ? (
               <p>Aucun lieu trouvé : gardez votre saisie.</p>
             ) : (
-              <ul className="mt-1 flex flex-col gap-1">
+              <>
+              <p className="font-medium">Choisissez le lieu correspondant :</p>
+              <ul className="mt-1 flex flex-col gap-1 rounded-xl border-2 border-blue-600 p-1">
                 {places.map((p) => (
                   <li key={`${p.point.lat},${p.point.lon}`}>
                     <button type="button" className="min-h-11 w-full rounded-xl px-3 text-left hover:bg-slate-100 dark:hover:bg-slate-800" onClick={() => pick(p)}>
@@ -139,6 +149,10 @@ export function StopForm({
                   </li>
                 ))}
               </ul>
+              <button type="button" className="mt-1 min-h-11 underline" onClick={() => setPlaces(null)}>
+                Garder ma saisie sans position
+              </button>
+              </>
             )}
             <p className="mt-1 text-xs text-slate-600 dark:text-slate-400">Recherche © OpenStreetMap contributors (Nominatim)</p>
           </div>

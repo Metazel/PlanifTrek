@@ -1,28 +1,19 @@
 import { useEffect, useRef, useState } from 'react';
 import * as maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
+// Le « worker » de MapLibre (calcul des tracés) est empaqueté par Vite et servi depuis le site.
+import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
+
+maplibregl.setWorkerUrl(workerUrl);
 import type { Trip } from '../domain/types';
+import { labelExpression, OPENFREEMAP_STYLE, OSM_RASTER, type MapLang } from './mapStyle';
 
 /**
- * Carte en ligne : tuiles OpenStreetMap en consultation interactive (aucun préchargement),
- * épingles numérotées par étape, trajets (pointillés pour l'avion).
+ * Carte en ligne : fond vectoriel OpenFreeMap (libellés dans la langue choisie), repli sur les tuiles OSM.
+ * Épingles numérotées par étape, trajets (pointillés pour l'avion).
  * Marqueurs construits en DOM avec textContent : aucun HTML injecté.
  */
-const STYLE: maplibregl.StyleSpecification = {
-  version: 8,
-  sources: {
-    osm: {
-      type: 'raster',
-      tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
-      tileSize: 256,
-      maxzoom: 19,
-      attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-    },
-  },
-  layers: [{ id: 'osm', type: 'raster', source: 'osm' }],
-};
-
-export default function MapView({ trip }: { trip: Trip }) {
+export default function MapView({ trip, lang }: { trip: Trip; lang: MapLang }) {
   const box = useRef<HTMLDivElement>(null);
   const map = useRef<maplibregl.Map | null>(null);
   const markers = useRef<maplibregl.Marker[]>([]);
@@ -30,19 +21,32 @@ export default function MapView({ trip }: { trip: Trip }) {
   // Le style peut être prêt alors que des tuiles chargent encore : on suit l'événement « load » une fois pour toutes.
   const ready = useRef(false);
   const drawLegs = useRef<(() => void) | null>(null);
+  const applyLang = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     if (!box.current) return;
     try {
-      const m = new maplibregl.Map({ container: box.current, style: STYLE, center: [35, 31.5], zoom: 6, attributionControl: { compact: true },
+      const m = new maplibregl.Map({ container: box.current, style: OPENFREEMAP_STYLE, center: [35, 31.5], zoom: 6, attributionControl: { compact: true },
         locale: { 'Map.Title': 'Carte du voyage', 'NavigationControl.ZoomIn': 'Zoomer', 'NavigationControl.ZoomOut': 'Dézoomer', 'AttributionControl.ToggleAttribution': 'Sources de la carte' },
       });
       m.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
       m.on('error', () => undefined);
       m.once('load', () => {
         ready.current = true;
+        applyLang.current?.();
         drawLegs.current?.();
       });
+      // Repli : si le fond vectoriel n'arrive pas, tuiles OSM.
+      const fallback = window.setTimeout(() => {
+        if (!ready.current) {
+          m.setStyle(OSM_RASTER);
+          m.once('style.load', () => {
+            ready.current = true;
+            drawLegs.current?.();
+          });
+        }
+      }, 8000);
+      m.once('remove', () => window.clearTimeout(fallback));
       map.current = m;
     } catch {
       setFailed(true);
@@ -52,6 +56,19 @@ export default function MapView({ trip }: { trip: Trip }) {
       map.current = null;
     };
   }, []);
+
+  useEffect(() => {
+    const m = map.current;
+    if (!m) return;
+    applyLang.current = () => {
+      for (const layer of m.getStyle().layers) {
+        if (layer.type === 'symbol' && layer.layout?.['text-field']) {
+          m.setLayoutProperty(layer.id, 'text-field', labelExpression(lang) as maplibregl.ExpressionSpecification);
+        }
+      }
+    };
+    if (ready.current) applyLang.current();
+  }, [lang]);
 
   useEffect(() => {
     const m = map.current;
@@ -92,8 +109,12 @@ export default function MapView({ trip }: { trip: Trip }) {
     drawLegs.current = () => {
       draw();
       fit();
-      // Repère pour la recette : nombre de trajets tracés.
+      // Repères pour la recette : trajets fournis, puis trajets réellement dessinés.
       box.current?.setAttribute('data-trajets', String(features.length));
+      m.once('idle', () => {
+        const drawn = m.queryRenderedFeatures({ layers: ['legs-ground', 'legs-air'] }).length;
+        box.current?.setAttribute('data-traces', String(drawn));
+      });
     };
     if (ready.current) drawLegs.current();
     else fit();

@@ -54,9 +54,12 @@ jobs:
           grep -q "src=\"/${repo}/assets/" dist/index.html || { echo "base Vite ≠ /${repo}/ : page blanche sur Pages"; exit 1; }
       - name: Budget de poids (frugalité)
         run: |
-          size=$(du -sk dist | cut -f1)
-          echo "Taille du build : ${size} ko"
-          test "$size" -lt 2048
+          # Chargement initial (appli sans la carte, chargée à part) et total publié.
+          initial=$(cat dist/index.html dist/assets/index-*.js dist/assets/index-*.css | wc -c)
+          total=$(du -sk dist | cut -f1)
+          echo "Chargement initial : $((initial / 1024)) ko ; total publié : ${total} ko"
+          test "$initial" -lt $((700 * 1024))
+          test "$total" -lt 3072
 
   recette:
     name: Recette navigateur

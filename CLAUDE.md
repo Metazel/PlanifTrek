@@ -30,7 +30,8 @@ sur l'appareil, aucun serveur. Un seul utilisateur prépare et pilote le voyage 
 - Stockage local seulement après consentement explicite ; bouton « Effacer toutes mes données ».
 - Pas de pièces d'identité. Adresses privées (étapes famille) jamais envoyées à un tiers.
 - Aucun traceur, aucune mesure d'audience.
-- Services tiers autorisés (CSP dans `vite.config.ts`) : tuiles OSM (consultation interactive),
+- Services tiers autorisés (CSP dans `vite.config.ts`) : fond de carte OpenFreeMap (vectoriel, sans clé ;
+  repli tuiles OSM en consultation interactive),
   Nominatim (recherche sur clic, ≤ 1 req/s, cache, attribution), Protomaps (bouton « Créer le pack »),
   liens Google Maps. Tout ajout = accord de David.
 - RGAA AA : alternative clavier à tout glisser-déposer, couleur jamais seule, liste texte doublant la carte.

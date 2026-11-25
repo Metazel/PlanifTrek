@@ -14,8 +14,8 @@ const CSP = [
   "default-src 'self'",
   "script-src 'self'",
   "style-src 'self'",
-  "img-src 'self' data: blob: https://tile.openstreetmap.org",
-  "connect-src 'self' https://nominatim.openstreetmap.org https://tile.openstreetmap.org",
+  "img-src 'self' data: blob: https://tile.openstreetmap.org https://tiles.openfreemap.org",
+  "connect-src 'self' https://nominatim.openstreetmap.org https://tile.openstreetmap.org https://tiles.openfreemap.org",
   "worker-src 'self' blob:",
   "font-src 'self'",
   "object-src 'none'",
@@ -40,6 +40,7 @@ export default defineConfig({
   // Le site est publié sur https://metazel.github.io/PlanifTrek/
   base: '/PlanifTrek/',
   plugins: [react(), tailwindcss(), cspMeta()],
+  worker: { format: 'es' },
   build: {
     sourcemap: false,
     target: 'es2022',

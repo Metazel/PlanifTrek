@@ -13,6 +13,7 @@ import { StopForm } from './StopForm';
 import { StopList } from './StopList';
 import { deviceTimeZone, todayISO } from './format';
 import { MODES } from './Transport';
+import { MAP_LANGS, type MapLang } from './mapStyle';
 
 // La carte (MapLibre) est chargée à part, seulement quand elle s'affiche.
 const MapView = lazy(() => import('./MapView'));
@@ -23,6 +24,7 @@ export function TripEditor({ trip }: { trip: Trip }) {
   const [removing, setRemoving] = useState<Id | null>(null);
   const [deletingTrip, setDeletingTrip] = useState(false);
   const [adding, setAdding] = useState(trip.stopOrder.length === 0);
+  const [lang, setLang] = useState<MapLang>('fr');
   const [showMap, setShowMap] = useState(() => window.matchMedia?.('(min-width: 1024px)').matches ?? false);
   const legKeys = new Set(requiredLegs(trip.stopOrder).map(([a, b]) => `${a}→${b}`));
   const offRoute = trip.transports.filter((t) => !legKeys.has(`${t.fromStopId}→${t.toStopId}`));
@@ -163,6 +165,16 @@ export function TripEditor({ trip }: { trip: Trip }) {
           <h2 id="carte" className="text-lg font-semibold">
             Carte
           </h2>
+          <label className="ml-auto mr-2 flex items-center gap-2 text-sm">
+            Noms
+            <select className={`${field} w-auto`} value={lang} onChange={(e) => setLang(e.target.value as MapLang)}>
+              {Object.entries(MAP_LANGS).map(([k, l]) => (
+                <option key={k} value={k}>
+                  {l}
+                </option>
+              ))}
+            </select>
+          </label>
           <button type="button" className={btn.secondary} aria-expanded={showMap} onClick={() => setShowMap((v) => !v)}>
             {showMap ? 'Masquer la carte' : 'Afficher la carte'}
           </button>
@@ -170,7 +182,7 @@ export function TripEditor({ trip }: { trip: Trip }) {
         {showMap && (
           <div className="h-80 flex-1 overflow-hidden rounded-2xl border border-slate-200 bg-white lg:h-auto dark:border-slate-800 dark:bg-slate-900">
             <Suspense fallback={<p className="p-4 text-sm">Chargement de la carte…</p>}>
-              <MapView trip={trip} />
+              <MapView trip={trip} lang={lang} />
             </Suspense>
           </div>
         )}
