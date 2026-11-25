@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import { checkTrip, describeAlert } from '../domain/coherence';
-import { addEvent, addStop, defaultDates, defaultTimeZone, removeEvent, removeStop, renameTrip, stopDependencies, updateStop } from '../domain/edit';
+import { addEvent, addStop, updateEvent, defaultDates, defaultTimeZone, removeEvent, removeStop, renameTrip, stopDependencies, updateStop } from '../domain/edit';
 import { applyReorder, closeLoop, previewReorder } from '../domain/itinerary';
 import { moveEvent, reorderDay, resizeStop, transferEvent } from '../domain/plan';
 import { addTransport, removeTransport, updateTransport } from '../domain/transport';
@@ -14,6 +14,7 @@ import { StopList } from './StopList';
 import { deviceTimeZone, todayISO } from './format';
 import { MODES } from './Transport';
 import { MAP_LANGS, type MapLang } from './mapStyle';
+import { stopView } from './mapModel';
 
 // La carte (MapLibre) est chargée à part, seulement quand elle s'affiche.
 const MapView = lazy(() => import('./MapView'));
@@ -25,6 +26,8 @@ export function TripEditor({ trip }: { trip: Trip }) {
   const [deletingTrip, setDeletingTrip] = useState(false);
   const [adding, setAdding] = useState(trip.stopOrder.length === 0);
   const [lang, setLang] = useState<MapLang>('fr');
+  const [view, setView] = useState<'pays' | string>('pays');
+  const legend = view === 'pays' ? null : stopView(trip, view);
   const [showMap, setShowMap] = useState(() => window.matchMedia?.('(min-width: 1024px)').matches ?? false);
   const legKeys = new Set(requiredLegs(trip.stopOrder).map(([a, b]) => `${a}→${b}`));
   const offRoute = trip.transports.filter((t) => !legKeys.has(`${t.fromStopId}→${t.toStopId}`));
@@ -122,6 +125,7 @@ export function TripEditor({ trip }: { trip: Trip }) {
           onUpdateTransport={(id, input) => update((t) => updateTransport(t, id, input))}
           onRemoveTransport={(id) => update((t) => removeTransport(t, id))}
           onAlign={(fn) => update(fn)}
+          onUpdateEvent={(id, input) => update((t) => updateEvent(t, id, input))}
         />
         <div className="mt-3 rounded-2xl border border-dashed border-slate-300 p-4 dark:border-slate-700">
           {adding ? (
@@ -166,6 +170,17 @@ export function TripEditor({ trip }: { trip: Trip }) {
             Carte
           </h2>
           <label className="flex items-center gap-2 text-sm sm:ml-auto">
+            Vue
+            <select className={`${field} w-auto`} value={view} onChange={(e) => setView(e.target.value)}>
+              <option value="pays">Tout le voyage</option>
+              {trip.stopOrder.map((id, i) => (
+                <option key={id} value={id}>
+                  Étape {i + 1} : {trip.stops[id]?.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="flex items-center gap-2 text-sm">
             Noms
             <select className={`${field} w-auto`} value={lang} onChange={(e) => setLang(e.target.value as MapLang)}>
               {Object.entries(MAP_LANGS).map(([k, l]) => (
@@ -182,13 +197,28 @@ export function TripEditor({ trip }: { trip: Trip }) {
         {showMap && (
           <div className="h-80 flex-1 overflow-hidden rounded-2xl border border-slate-200 bg-white lg:h-auto dark:border-slate-800 dark:bg-slate-900">
             <Suspense fallback={<p className="p-4 text-sm">Chargement de la carte…</p>}>
-              <MapView trip={trip} lang={lang} />
+              <MapView trip={trip} lang={lang} view={trip.stops[view] ? view : 'pays'} />
             </Suspense>
           </div>
         )}
         <p className="text-sm text-slate-600 dark:text-slate-400">
           Même parcours que la liste des étapes : épingles numérotées dans l’ordre, ▶ départ (vert), ■ arrivée (rouge),
           ⟲ départ et arrivée au même endroit ; traits du vert au rouge dans le sens du voyage, tirets pour l’avion.
+          {legend && legend.legend.length > 0 && (
+            <span className="mt-1 flex flex-wrap gap-x-3">
+              {legend.legend.map((l) => (
+                <span key={l.label} className="inline-flex items-center gap-1">
+                  <span aria-hidden="true" className="inline-block h-1 w-5 rounded" style={{ background: l.color }} />
+                  {l.label}
+                </span>
+              ))}
+            </span>
+          )}
+          {legend && legend.unplaced.length > 0 && (
+            <strong className="mt-1 block text-amber-800 dark:text-amber-300">
+              ⚠ Sous-étapes non placées : {legend.unplaced.join(', ')} (✎ puis « Chercher le lieu »).
+            </strong>
+          )}
           {noPoint.length > 0 && (
             <strong className="mt-1 block text-amber-800 dark:text-amber-300">
               ⚠ Pas sur la carte : {noPoint.map((s) => s?.name).join(', ')}. Le trait gris pointillé saute ces étapes : utilisez

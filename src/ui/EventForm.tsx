@@ -1,7 +1,8 @@
 import { useState, type FormEvent } from 'react';
 import { daysOfStop } from '../domain/coherence';
 import { validateEvent, type EventError, type EventInput } from '../domain/edit';
-import type { EventKind, ISODate, Stop, Trip } from '../domain/types';
+import type { EventKind, GeoPoint, ISODate, Stop, Trip, TripEvent } from '../domain/types';
+import { PlaceSearch } from './PlaceSearch';
 import { btn, field } from './Dialog';
 import { fmtDay } from './format';
 
@@ -36,29 +37,42 @@ export function EventForm({
   trip,
   stop,
   prefill = {},
+  initial,
   onSubmit,
   onCancel,
 }: {
   trip: Trip;
   stop: Stop;
   prefill?: EventPrefill;
+  /** Sous-étape existante à modifier. */
+  initial?: TripEvent;
   onSubmit: (e: EventInput) => void;
   onCancel: () => void;
 }) {
-  const [kind, setKind] = useState<EventKind>(prefill.kind ?? 'visite');
-  const [title, setTitle] = useState(prefill.title ?? '');
-  const [date, setDate] = useState(prefill.date ?? stop.arrival);
-  const [time, setTime] = useState('');
-  const [checkIn, setCheckIn] = useState(prefill.checkIn ?? stop.arrival);
-  const [checkOut, setCheckOut] = useState(prefill.checkOut ?? stop.departure);
+  const src = initial ?? prefill;
+  const [kind, setKind] = useState<EventKind>(src.kind ?? 'visite');
+  const [title, setTitle] = useState(src.title ?? '');
+  const [date, setDate] = useState(src.date ?? stop.arrival);
+  const [time, setTime] = useState(initial?.time ?? '');
+  const [checkIn, setCheckIn] = useState(src.checkIn ?? stop.arrival);
+  const [checkOut, setCheckOut] = useState(src.checkOut ?? stop.departure);
+  const [point, setPoint] = useState<GeoPoint | undefined>(initial?.point);
+  const [pending, setPending] = useState(false);
   const [errors, setErrors] = useState<EventError[]>([]);
   const lodging = kind === 'hebergement';
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
+    if (pending) return;
+    // On garde les informations déjà saisies ailleurs (référence, prix, statut).
+    const keep = initial ? { ...initial } : {};
+    const base = { ...keep, stopId: stop.id, kind, title, ...(point ? { point } : {}) };
     const input: EventInput = lodging
-      ? { stopId: stop.id, kind, title, checkIn, checkOut }
-      : { stopId: stop.id, kind, title, date, ...(time ? { time } : {}) };
+      ? { ...base, checkIn, checkOut }
+      : { ...base, date, ...(time ? { time } : {}) };
+    if (!time) delete (input as { time?: string }).time;
+    if (!point) delete (input as { point?: GeoPoint }).point;
+    delete (input as { id?: string }).id;
     const errs = validateEvent(trip, input);
     setErrors(errs);
     if (!errs.length) onSubmit(input);
@@ -116,6 +130,11 @@ export function EventForm({
           </label>
         </>
       )}
+      {kind !== 'famille' && (
+        <div className="sm:col-span-2">
+          <PlaceSearch query={title} point={point} onPick={(p) => setPoint(p.point)} onPending={setPending} />
+        </div>
+      )}
       {errors.length > 0 && (
         <ul role="alert" className="text-sm text-red-700 sm:col-span-2 dark:text-red-400">
           {errors.map((e) => (
@@ -125,7 +144,7 @@ export function EventForm({
       )}
       <div className="flex gap-2 sm:col-span-2">
         <button type="submit" className={btn.primary}>
-          Ajouter
+          {initial ? 'Enregistrer' : 'Ajouter'}
         </button>
         <button type="button" className={btn.secondary} onClick={onCancel}>
           Annuler

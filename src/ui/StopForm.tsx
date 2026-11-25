@@ -2,7 +2,8 @@ import { useId, useState, type FormEvent } from 'react';
 import { validateStop, type StopError, type StopInput } from '../domain/edit';
 import { btn, field } from './Dialog';
 import { timeZones } from './format';
-import { searchPlace, type Place } from './geocode';
+import type { Place } from './geocode';
+import { PlaceSearch } from './PlaceSearch';
 
 const MESSAGES: Record<StopError, string> = {
   'nom-vide': 'Indiquez le nom de l’étape.',
@@ -32,8 +33,7 @@ export function StopForm({
 }) {
   const [v, setV] = useState<StopInput>(initial);
   const [errors, setErrors] = useState<StopError[]>([]);
-  const [places, setPlaces] = useState<Place[] | null>(null);
-  const [searching, setSearching] = useState(false);
+  const [pending, setPending] = useState(false);
   const [searchError, setSearchError] = useState('');
   const uid = useId();
   const set = <K extends keyof StopInput>(k: K, value: StopInput[K]) => setV((s) => ({ ...s, [k]: value }));
@@ -41,7 +41,7 @@ export function StopForm({
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
-    if (places?.length) {
+    if (pending) {
       setSearchError('Choisissez un lieu dans la liste, ou « Garder ma saisie sans position ».');
       return;
     }
@@ -51,25 +51,9 @@ export function StopForm({
     if (!errs.length) onSubmit(input);
   };
 
-  const search = async () => {
-    setSearching(true);
-    setSearchError('');
-    try {
-      const found = await searchPlace(v.name);
-      // Un seul résultat : il est retenu directement.
-      if (found.length === 1 && found[0]) pick(found[0]);
-      else setPlaces(found);
-    } catch (err) {
-      setSearchError(`${err instanceof Error ? err.message : 'Recherche impossible'}. Saisissez le nom à la main.`);
-    } finally {
-      setSearching(false);
-    }
-  };
-
   const pick = (p: Place) => {
     setSearchError('');
     setV((s) => ({ ...s, name: p.name, point: p.point, ...(p.timeZone ? { timeZone: p.timeZone } : {}) }));
-    setPlaces(null);
   };
 
   const has = (...keys: StopError[]) => errors.some((e) => keys.includes(e));
@@ -101,9 +85,7 @@ export function StopForm({
       </fieldset>
 
       <div className="flex flex-col gap-1 text-sm sm:col-span-2">
-        <label htmlFor={`${uid}-nom`}>
-          Nom de l’étape {v.point && <span className="text-emerald-700 dark:text-emerald-400">· 📍 lieu trouvé</span>}
-        </label>
+        <label htmlFor={`${uid}-nom`}>Nom de l’étape</label>
         <div className="flex gap-2">
           <input
             id={`${uid}-nom`}
@@ -122,40 +104,12 @@ export function StopForm({
               })
             }
           />
-          {v.kind !== 'famille' && (
-            <button type="button" className={btn.secondary} disabled={searching || v.name.trim().length < 2} onClick={() => void search()}>
-              {searching ? 'Recherche…' : 'Chercher'}
-            </button>
-          )}
         </div>
+        {v.kind !== 'famille' && <PlaceSearch query={v.name} point={v.point} onPick={pick} onPending={setPending} />}
         {searchError && (
           <p role="alert" className="text-red-700 dark:text-red-400">
             {searchError}
           </p>
-        )}
-        {places && (
-          <div role="region" aria-label="Lieux trouvés" aria-live="polite">
-            {places.length === 0 ? (
-              <p>Aucun lieu trouvé : gardez votre saisie.</p>
-            ) : (
-              <>
-              <p className="font-medium">Choisissez le lieu correspondant :</p>
-              <ul className="mt-1 flex flex-col gap-1 rounded-xl border-2 border-blue-600 p-1">
-                {places.map((p) => (
-                  <li key={`${p.point.lat},${p.point.lon}`}>
-                    <button type="button" className="min-h-11 w-full rounded-xl px-3 text-left hover:bg-slate-100 dark:hover:bg-slate-800" onClick={() => pick(p)}>
-                      {p.label}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-              <button type="button" className="mt-1 min-h-11 underline" onClick={() => setPlaces(null)}>
-                Garder ma saisie sans position
-              </button>
-              </>
-            )}
-            <p className="mt-1 text-xs text-slate-600 dark:text-slate-400">Recherche © OpenStreetMap contributors (Nominatim)</p>
-          </div>
         )}
       </div>
 

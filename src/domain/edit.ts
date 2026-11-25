@@ -170,3 +170,11 @@ export function defaultDates(trip: Trip, today: ISODate): { arrival: ISODate; de
   const next = new Date(Date.UTC(y, m - 1, d + 1)).toISOString().slice(0, 10);
   return { arrival: start, departure: next };
 }
+
+/** Modifie une sous-étape ou un hébergement existant (même identifiant). */
+export function updateEvent(trip: Trip, id: Id, input: EventInput): Trip {
+  if (!trip.events.some((e) => e.id === id)) throw new RangeError('Événement inconnu');
+  if (validateEvent(trip, input).length) throw new RangeError('Événement invalide');
+  const event: TripEvent = { ...input, id, title: cleanText(input.title, LIMITS.title) };
+  return { ...trip, events: trip.events.map((e) => (e.id === id ? event : e)) };
+}

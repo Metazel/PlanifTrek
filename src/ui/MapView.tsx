@@ -6,7 +6,7 @@ import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
 
 maplibregl.setWorkerUrl(workerUrl);
 import type { Trip } from '../domain/types';
-import { mapModel, rankColor } from './mapModel';
+import { countryView, stopView, type View } from './mapModel';
 import { labelExpression, OPENFREEMAP_STYLE, OSM_RASTER, type MapLang } from './mapStyle';
 
 /**
@@ -14,7 +14,7 @@ import { labelExpression, OPENFREEMAP_STYLE, OSM_RASTER, type MapLang } from './
  * Épingles numérotées par étape, trajets (pointillés pour l'avion).
  * Marqueurs construits en DOM avec textContent : aucun HTML injecté.
  */
-export default function MapView({ trip, lang }: { trip: Trip; lang: MapLang }) {
+export default function MapView({ trip, lang, view }: { trip: Trip; lang: MapLang; view: 'pays' | string }) {
   const box = useRef<HTMLDivElement>(null);
   const map = useRef<maplibregl.Map | null>(null);
   const markers = useRef<maplibregl.Marker[]>([]);
@@ -74,25 +74,23 @@ export default function MapView({ trip, lang }: { trip: Trip; lang: MapLang }) {
   useEffect(() => {
     const m = map.current;
     if (!m) return;
-    const model = mapModel(trip);
+    const v: View = view === 'pays' ? countryView(trip) : stopView(trip, view);
     markers.current.forEach((mk) => mk.remove());
     markers.current = [];
     const bounds = new maplibregl.LngLatBounds();
-    const ROLE: Record<string, string> = { depart: 'Départ', arrivee: 'Arrivée', boucle: 'Départ et arrivée', etape: 'Étape' };
-    for (const p of model.pins) {
+    for (const p of v.pins) {
       const el = document.createElement('div');
-      el.className = `pt-marker pt-${p.role}`;
-      el.textContent = p.numbers.join(' · ');
+      el.className = p.cls;
+      el.textContent = p.text;
       el.setAttribute('role', 'img');
-      el.setAttribute('aria-label', `${ROLE[p.role]} : ${p.numbers.map((n, i) => `${n}. ${p.names[i]}`).join(', ')}`);
-      el.title = p.names.join(' / ');
+      el.setAttribute('aria-label', p.aria);
+      el.title = p.aria;
       markers.current.push(new maplibregl.Marker({ element: el }).setLngLat([p.lon, p.lat]).addTo(m));
       bounds.extend([p.lon, p.lat]);
     }
-    const total = model.segments.length;
-    const features = model.segments.map((sg) => ({
+    const features = v.segments.map((sg) => ({
       type: 'Feature' as const,
-      properties: { kind: sg.kind, color: sg.kind === 'manquant' ? '#94a3b8' : rankColor(sg.rank, total) },
+      properties: { kind: sg.kind, color: sg.color },
       geometry: { type: 'LineString' as const, coordinates: [sg.from, sg.to] },
     }));
     const draw = () => {
@@ -123,7 +121,7 @@ export default function MapView({ trip, lang }: { trip: Trip; lang: MapLang }) {
     };
     if (ready.current) drawLegs.current();
     else fit();
-  }, [trip]);
+  }, [trip, view]);
 
   if (failed) return <p className="p-4 text-sm">Carte indisponible sur cet appareil (WebGL désactivé). La liste des étapes reste utilisable.</p>;
   return <div ref={box} className="h-full min-h-80 w-full rounded-2xl" />;

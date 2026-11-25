@@ -53,7 +53,7 @@ export function uncoveredNights(trip: Trip, stopId: Id): ISODate[] {
   const s = trip.stops[stopId];
   if (!s) return [];
   const spans = trip.events.flatMap((e) => (e.kind === 'hebergement' && e.checkIn && e.checkOut ? [[e.checkIn, e.checkOut] as const] : []));
-  return nightsBetween(s.arrival, s.departure).filter((n) => !spans.some(([a, b]) => a <= n && n < b));
+  return nightsBetween(s.arrival, s.departure).filter((n) => !spans.some(([a, b]) => a <= n && n < b) && !nightInTransit(trip, n));
 }
 
 const sameDay = (a: TripEvent, b: TripEvent) => a.stopId === b.stopId && a.kind !== 'hebergement' && b.kind !== 'hebergement' && a.date === b.date;
@@ -118,4 +118,20 @@ export function alignLodgingToStop(trip: Trip, eventId: Id): Trip {
   const stop = e && trip.stops[e.stopId];
   if (!e || !stop || e.kind !== 'hebergement' || diffDays(stop.arrival, stop.departure) < 1) return trip;
   return { ...trip, events: trip.events.map((x) => (x.id === eventId ? { ...x, checkIn: stop.arrival, checkOut: stop.departure } : x)) };
+}
+
+/**
+ * Nuit « en transit » : pas d'hébergement attendu. C'est le cas si un trajet part entre 18 h ce soir-là
+ * et 8 h le lendemain (vol de 5 h : on quitte la chambre en journée et on part à l'aéroport),
+ * ou s'il roule de nuit (arrivée le lendemain).
+ */
+export function nightInTransit(trip: Trip, night: ISODate): boolean {
+  const next = addDays(night, 1);
+  return trip.transports.some((t) => {
+    const dep = t.departure?.at;
+    if (!dep) return false;
+    if (dep >= `${night}T18:00` && dep <= `${next}T08:00`) return true;
+    const arr = t.arrival?.at;
+    return !!arr && dep.slice(0, 10) <= night && arr.slice(0, 10) >= next;
+  });
 }

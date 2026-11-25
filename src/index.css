@@ -52,3 +52,10 @@ body {
 .maplibregl-map .maplibregl-ctrl-attrib-inner a {
   text-decoration: underline;
 }
+
+.pt-lieu {
+  @apply h-6 min-w-6 bg-white text-sm text-slate-900;
+}
+.pt-jour {
+  background: #334155;
+}

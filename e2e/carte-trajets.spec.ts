@@ -60,6 +60,21 @@ test.describe('Trajets (CU3) et carte', () => {
     await expect(page.locator('[data-trajets]')).toHaveAttribute('data-trajets', '3', { timeout: 15_000 });
   });
 
+  test('vue étape : journées en couleur, sous-étapes non placées signalées ; modifier une sous-étape', async ({ page }, info) => {
+    await example(page);
+    if (info.project.name === 'android') await page.getByRole('button', { name: 'Afficher la carte' }).click();
+    await page.getByLabel('Vue').selectOption({ label: 'Étape 1 : Jérusalem' });
+    await expect(page.getByText('Jour 2 (11/08)')).toBeVisible();
+    await expect(page.getByText(/Sous-étapes non placées : Mur occidental, Yad Vashem/)).toBeVisible();
+    await expect(page.locator('.pt-marker')).toHaveCount(1, { timeout: 15_000 });
+
+    await page.getByRole('button', { name: 'Modifier Mur occidental' }).click();
+    const jer = page.getByRole('listitem').filter({ has: page.getByRole('heading', { name: /Jérusalem/ }) }).first();
+    await jer.getByLabel('Titre').fill('Kotel');
+    await jer.getByRole('button', { name: 'Enregistrer', exact: true }).click();
+    await expect(page.getByText(/Sous-étapes non placées : Kotel, Yad Vashem/)).toBeVisible();
+  });
+
   test('carte : épingles numérotées des étapes, alternative textuelle', async ({ page }, info) => {
     await example(page);
     if (info.project.name === 'android') await page.getByRole('button', { name: 'Afficher la carte' }).click();

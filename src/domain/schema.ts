@@ -46,13 +46,13 @@ const eventSchema = z.strictObject({
   point: point.optional(),
 });
 
-const endpoint = z.strictObject({ place: text(120), at: localDateTime, timeZone });
+const endpoint = z.strictObject({ place: text(120), at: localDateTime, timeZone, point: point.optional() });
 
 const transportSchema = z.strictObject({
   id,
   fromStopId: id,
   toStopId: id,
-  mode: z.enum(['avion', 'train', 'voiture', 'bus', 'taxi', 'marche']),
+  mode: z.enum(['avion', 'train', 'voiture', 'bus', 'bateau', 'taxi', 'marche']),
   status: z.enum(['brouillon', 'reserve', 'a-verifier']),
   departure: endpoint.optional(),
   arrival: endpoint.optional(),
