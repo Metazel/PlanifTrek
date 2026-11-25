@@ -3,8 +3,17 @@ import type { Stop, Trip, TripEvent } from './types';
 /** Scénario de référence du cadrage : circuit Israël, août. */
 const TZ = 'Asia/Jerusalem';
 
+const POINTS: Record<string, [number, number]> = {
+  jer: [31.7767, 35.2345],
+  net: [32.3215, 34.8532],
+  eil: [29.5577, 34.9519],
+  mm: [31.559, 35.4732],
+  tlv: [32.0853, 34.7818],
+};
+
 const stop = (id: string, name: string, arrival: string, departure: string, kind: Stop['kind'] = 'ville'): Stop => ({
   id,
+  point: { lat: POINTS[id]?.[0] ?? 31.5, lon: POINTS[id]?.[1] ?? 35 },
   name,
   kind,
   timeZone: TZ,
@@ -46,7 +55,17 @@ export function israelTrip(): Trip {
       { id: 'a-recif', stopId: 'eil', kind: 'activite', title: 'Plongée récif', date: '2027-08-17' },
     ],
     transports: [
-      { id: 't-jer-net', fromStopId: 'jer', toStopId: 'net', mode: 'train', status: 'reserve' },
+      {
+        id: 't-jer-net',
+        fromStopId: 'jer',
+        toStopId: 'net',
+        mode: 'train',
+        status: 'reserve',
+        departure: { place: 'Gare Yitzhak Navon', at: '2027-08-13T10:15', timeZone: TZ },
+        arrival: { place: 'Gare de Netanya', at: '2027-08-13T11:40', timeZone: TZ },
+        price: { amountMinor: 4400, currency: 'ILS' },
+        paymentStatus: 'paye',
+      },
       { id: 't-net-eil', fromStopId: 'net', toStopId: 'eil', mode: 'avion', status: 'reserve' },
     ],
   };

@@ -1,10 +1,10 @@
 # PlanifTrek
 
-Planificateur de voyage sur mesure, utilisable hors ligne : les étapes datées, les trajets, les hébergements, le budget et les billets au même endroit, réorganisables à tout moment sans rien perdre. Un seul voyageur prépare et pilote le voyage, sur PC puis sur son téléphone Android. Version 0.3.0 (incrément 1 en cours).
+Planificateur de voyage sur mesure, utilisable hors ligne : les étapes datées, les trajets, les hébergements, le budget et les billets au même endroit, réorganisables à tout moment sans rien perdre. Un seul voyageur prépare et pilote le voyage, sur PC puis sur son téléphone Android. Version 0.4.0 (incrément 1 terminé).
 
 | Incrément | Contenu | État |
 | --- | --- | --- |
-| 1. Noyau | Étapes et journées, réorganisation avec aperçu des impacts, boucle, contrôles de cohérence, carte en ligne | Fait, sauf la carte (prochaine version) |
+| 1. Noyau | Étapes et journées, réorganisation avec aperçu des impacts, boucle, contrôles de cohérence, carte en ligne | Fait |
 | 2. Hors ligne | Pack carte de la zone du voyage, vue « Aujourd'hui », passage PC → téléphone, exports Google Maps / KML / GeoJSON / CSV | À venir |
 | 3. Budget et documents | Prévu, réel, reste à payer en plusieurs devises ; billets et réservations rattachés aux événements | À venir |
 | 4. Import | E-mail de confirmation collé ou PDF déposé, lu sur l'appareil, file de validation | À venir |
@@ -29,6 +29,8 @@ Planificateur de voyage sur mesure, utilisable hors ligne : les étapes datées,
 - **Durée** : boutons − / + nuit sur chaque étape ; les étapes suivantes glissent d'autant, leurs sous-étapes non réservées suivent, les réservations restent et sont signalées.
 - **Hébergement** : chaque étape indique ses nuits non couvertes et propose « Ajouter un hébergement » pré-rempli.
 - **Sous-étapes** : repas, déplacement, visite, activité, famille, événement (soirée, mariage), temps libre, avec heure facultative ; classées par journée, réorganisables (glisser-déposer ou ↑ ↓) et transférables vers une autre étape.
+- **Trajets** : entre deux étapes, « + Trajet » puis mode (avion, train, voiture, bus, taxi, marche), lieux et horaires de départ et d'arrivée en heure locale, durée calculée, n° de vol ou de réservation, prix et devise, statut de paiement, « à prévoir » ou « réservé ». Les trajets devenus hors circuit après une réorganisation sont listés pour être gardés ou retirés.
+- **Carte** : à droite sur grand écran, à afficher sur téléphone ; épingles numérotées dans l'ordre du circuit, trajets tracés (pointillés pour l'avion), cadrage automatique. Chargée à part, seulement quand elle s'affiche. Les étapes sans position sont listées sous la carte.
 - **Recherche de lieu** : bouton « Chercher » (Nominatim, sur clic, 1 requête/s, résultats gardés), jamais pour une visite famille ; en cas de panne, saisie libre.
 - **Réorganiser** : glisser-déposer à la souris, au doigt ou au clavier (Espace, flèches, Espace), boutons monter et descendre ; aperçu avant d'appliquer ; « Fermer la boucle ».
 - **Annuler / Rétablir** : boutons et Ctrl+Z, Ctrl+Maj+Z (50 niveaux).
@@ -69,9 +71,9 @@ e2e/        recette navigateur (Playwright : parcours, accessibilité, CSP)
 
 ## Sécurité et vie privée
 
-- Dépendances d'exécution : React, Dexie, Zod, Zustand, dnd-kit, versions figées. `npm audit` : 0 vulnérabilité.
+- Dépendances d'exécution : React, Dexie, Zod, Zustand, dnd-kit, MapLibre GL, versions figées. `npm audit` : 0 vulnérabilité.
 - Toute donnée relue (stockage, futur fichier importé) est revalidée par un schéma strict : identifiants restreints, tailles bornées, dates et fuseaux vérifiés ; une donnée altérée est écartée et signalée. Textes saisis nettoyés (caractères de contrôle et de direction retirés, longueur bornée).
-- CSP stricte injectée au build (`script-src 'self'`, `object-src 'none'`, `connect-src` limité à `nominatim.openstreetmap.org` et `tile.openstreetmap.org`), pas de `unsafe-inline`.
+- CSP stricte injectée au build (`script-src 'self'`, `object-src 'none'`, `connect-src` limité à `nominatim.openstreetmap.org` et `tile.openstreetmap.org` ; recette sans aucun appel réel à ces services (réponses simulées)), pas de `unsafe-inline`.
 - Aucun HTML injecté : `innerHTML` et `dangerouslySetInnerHTML` interdits par le lint.
 - Stockage local seulement après consentement explicite, effacement total à tout instant. Pas de pièces d'identité. Les adresses privées des étapes famille ne sont jamais envoyées à un service tiers et sont exclues des exports Google Maps par défaut. Aucun traceur, aucune mesure d'audience.
 - Services tiers : tuiles OpenStreetMap en consultation interactive (téléchargement pour le hors-ligne interdit par leur politique, d'où le pack carte Protomaps), Nominatim sur clic seulement (1 requête par seconde au plus, résultats gardés, attribution), liens Google Maps générés à la demande.
@@ -82,15 +84,15 @@ Le workflow `.github/workflows/ci.yml` vérifie, construit et teste chaque pull 
 
 | Job | Contenu |
 | --- | --- |
-| Vérifier | `npm audit`, lint, types stricts, 44 tests unitaires |
+| Vérifier | `npm audit`, lint, types stricts, 47 tests unitaires |
 | Construire | build de production, chemin de publication conforme au nom du dépôt, budget de poids (2 Mo au plus) |
-| Recette navigateur | 13 scénarios Playwright sur PC et Android simulé (consentement, effacement, saisie, passage, +/- nuits, sous-étapes, recherche de lieu simulée et en panne, réorganisation au clavier, boucle, suppression, accessibilité, CSP) ; rapport en artefact en cas d'échec |
+| Recette navigateur | 16 scénarios Playwright sur PC et Android simulé (consentement, effacement, saisie, passage, +/- nuits, sous-étapes, recherche de lieu simulée et en panne, trajets, carte, réorganisation au clavier, boucle, suppression, accessibilité, CSP) ; rapport en artefact en cas d'échec |
 
 Le workflow `.github/workflows/pages.yml` publie le site à chaque fusion sur `main` : **https://metazel.github.io/PlanifTrek/** (Settings > Pages > Source : GitHub Actions). Actions épinglées par empreinte SHA, permissions limitées par job. Dependabot propose chaque semaine les mises à jour npm et GitHub Actions. Toute modification passe par une pull request.
 
 ## Limites connues
 
-- Pas encore de carte ni de saisie des trajets (horaires, mode, prix) : prochaines versions.
+- Carte en ligne seulement : le hors-ligne (pack carte) arrive à l'incrément 2.
 - Un décalage d'étapes ne déplace jamais une réservation (hébergement, sous-étape avec référence ou statut de paiement) : elle est signalée, à corriger à la main.
 - Fuseau déduit du pays pour une quarantaine de pays ; sinon, à choisir.
 - Fuseau horaire choisi par l'utilisateur pour chaque étape (pas de déduction automatique depuis la carte).
