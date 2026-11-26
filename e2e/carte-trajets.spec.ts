@@ -10,6 +10,7 @@ async function example(page: Page) {
   await page.goto('./');
   await page.getByRole('button', { name: 'Enregistrer mes voyages sur cet appareil' }).click();
   await page.getByRole('button', { name: "Charger l'exemple" }).click();
+  await page.getByRole('button', { name: '✎ Détail & carte' }).click();
 }
 
 test.describe('Trajets (CU3) et carte', () => {

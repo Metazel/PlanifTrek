@@ -23,6 +23,7 @@ test.describe('Itinéraire (CU1, CU2, CU4)', () => {
     await start(page);
     await page.getByLabel('Nom du voyage').fill('Israël 2027');
     await page.getByRole('button', { name: 'Créer' }).click();
+    await page.getByRole('button', { name: '✎ Détail & carte' }).click();
 
     await addStop(page, 'Jérusalem', '2027-08-10', '2027-08-13');
     await addStop(page, 'Netanya', '2027-08-13', '2027-08-16');
@@ -41,6 +42,7 @@ test.describe('Itinéraire (CU1, CU2, CU4)', () => {
 
     await page.reload();
     await page.getByRole('button', { name: /Israël 2027/ }).click();
+    await page.getByRole('button', { name: '✎ Détail & carte' }).click();
     expect(await stopNames(page)).toEqual(['1.Jérusalem', '2.Netanya']);
     await expect(page.getByText('Hôtel King David')).toBeVisible();
   });
@@ -48,6 +50,7 @@ test.describe('Itinéraire (CU1, CU2, CU4)', () => {
   test('refuse une saisie invalide avec un message lié au champ', async ({ page }) => {
     await start(page);
     await page.getByRole('button', { name: 'Créer' }).click();
+    await page.getByRole('button', { name: '✎ Détail & carte' }).click();
     const form = page.locator('form').filter({ has: page.getByRole('button', { name: 'Ajouter l’étape' }) });
     await form.getByLabel('Arrivée', { exact: true }).fill('2027-08-13');
     await form.getByLabel('Départ', { exact: true }).fill('2027-08-10');
@@ -60,6 +63,7 @@ test.describe('Itinéraire (CU1, CU2, CU4)', () => {
   test('réorganiser au clavier : aperçu, application, annulation Ctrl+Z', async ({ page }) => {
     await start(page);
     await page.getByRole('button', { name: "Charger l'exemple" }).click();
+    await page.getByRole('button', { name: '✎ Détail & carte' }).click();
     expect(await stopNames(page)).toEqual(['1.Jérusalem', '2.Netanya', '3.Eilat']);
 
     await page.getByRole('button', { name: 'Monter Eilat' }).click();
@@ -90,6 +94,7 @@ test.describe('Itinéraire (CU1, CU2, CU4)', () => {
   test('glisser-déposer au clavier (Espace, flèche, Espace) ouvre l’aperçu ; Annuler ne change rien', async ({ page }) => {
     await start(page);
     await page.getByRole('button', { name: "Charger l'exemple" }).click();
+    await page.getByRole('button', { name: '✎ Détail & carte' }).click();
     await page.getByRole('button', { name: 'Déplacer Netanya' }).focus();
     // On attend chaque annonce destinée aux lecteurs d'écran avant la touche suivante.
     await page.keyboard.press('Space');
@@ -106,6 +111,7 @@ test.describe('Itinéraire (CU1, CU2, CU4)', () => {
   test('fermer la boucle puis supprimer une étape après confirmation', async ({ page }) => {
     await start(page);
     await page.getByRole('button', { name: "Charger l'exemple" }).click();
+    await page.getByRole('button', { name: '✎ Détail & carte' }).click();
     await page.getByRole('button', { name: '⟲ Fermer la boucle' }).click();
     expect(await stopNames(page)).toEqual(['1.Jérusalem', '2.Netanya', '3.Eilat', '4.Jérusalem (retour)']);
 
@@ -121,6 +127,7 @@ test.describe('Itinéraire (CU1, CU2, CU4)', () => {
   test('étape de passage sans nuit, puis +/- nuits sur une étape', async ({ page }) => {
     await start(page);
     await page.getByRole('button', { name: "Charger l'exemple" }).click();
+    await page.getByRole('button', { name: '✎ Détail & carte' }).click();
     await page.getByRole('button', { name: '+ Ajouter une étape' }).click();
     const form = page.locator('form').filter({ has: page.getByRole('button', { name: 'Ajouter l’étape' }) });
     await form.getByLabel('🚏 Passage (sans nuit)').check();
@@ -141,6 +148,7 @@ test.describe('Itinéraire (CU1, CU2, CU4)', () => {
   test('sous-étapes : ordre dans la journée et transfert vers une autre étape', async ({ page }) => {
     await start(page);
     await page.getByRole('button', { name: "Charger l'exemple" }).click();
+    await page.getByRole('button', { name: '✎ Détail & carte' }).click();
     const jer = page.getByRole('listitem').filter({ has: page.getByRole('heading', { name: /Jérusalem/ }) });
     await jer.getByRole('button', { name: '+ Sous-étape' }).click();
     await jer.getByLabel('Type').selectOption('repas');
@@ -175,6 +183,7 @@ test.describe('Itinéraire (CU1, CU2, CU4)', () => {
     });
     await start(page);
     await page.getByRole('button', { name: 'Créer' }).click();
+    await page.getByRole('button', { name: '✎ Détail & carte' }).click();
     const form = page.locator('form').filter({ has: page.getByRole('button', { name: 'Ajouter l’étape' }) });
     await form.getByLabel('Fuseau horaire').selectOption('Europe/Paris');
     await form.getByLabel('Nom de l’étape').fill('jerusalem');
@@ -199,6 +208,7 @@ test.describe('Itinéraire (CU1, CU2, CU4)', () => {
   test('hébergement plus long que l’étape : réajustement en un clic', async ({ page }) => {
     await start(page);
     await page.getByRole('button', { name: "Charger l'exemple" }).click();
+    await page.getByRole('button', { name: '✎ Détail & carte' }).click();
     await page.getByRole('button', { name: 'Une nuit de moins à Jérusalem' }).click();
     const jer = page.getByRole('listitem').filter({ has: page.getByRole('heading', { name: /Jérusalem/ }) }).first();
     await expect(jer).toContainText('Dates différentes de l’étape');
@@ -210,6 +220,7 @@ test.describe('Itinéraire (CU1, CU2, CU4)', () => {
   test('éditeur sans anomalie d’accessibilité critique ou sérieuse', async ({ page }) => {
     await start(page);
     await page.getByRole('button', { name: "Charger l'exemple" }).click();
+    await page.getByRole('button', { name: '✎ Détail & carte' }).click();
     const { violations } = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze();
     expect(violations.filter((v) => v.impact === 'critical' || v.impact === 'serious')).toEqual([]);
   });

@@ -4,6 +4,7 @@ test('location de véhicule : saisie, planning, rappels ; retour avant prise ref
   await page.goto('./');
   await page.getByRole('button', { name: 'Enregistrer mes voyages sur cet appareil' }).click();
   await page.getByRole('button', { name: "Charger l'exemple" }).click();
+  await page.getByRole('button', { name: '✎ Détail & carte' }).click();
   const sec = page.getByRole('region', { name: '🚙 Véhicules de location' });
   await sec.getByRole('button', { name: '+ Location' }).click();
   await sec.getByLabel('Agence (loueur)').fill('Hertz');
@@ -26,5 +27,6 @@ test('location de véhicule : saisie, planning, rappels ; retour avant prise ref
 
   await page.reload();
   await page.getByRole('button', { name: /Israël — août/ }).click();
+  await page.getByRole('button', { name: '✎ Détail & carte' }).click();
   await expect(page.getByRole('region', { name: '🚙 Véhicules de location' })).toContainText('Hertz · Citadine');
 });

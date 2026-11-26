@@ -1,6 +1,6 @@
 # PlanifTrek
 
-Planificateur de voyage sur mesure, utilisable hors ligne : les étapes datées, les trajets, les hébergements, le budget et les billets au même endroit, réorganisables à tout moment sans rien perdre. Un seul voyageur prépare et pilote le voyage, sur PC puis sur son téléphone Android. Version 0.9.0 (incrément 2 en cours).
+Planificateur de voyage sur mesure, utilisable hors ligne : les étapes datées, les trajets, les hébergements, le budget et les billets au même endroit, réorganisables à tout moment sans rien perdre. Un seul voyageur prépare et pilote le voyage, sur PC puis sur son téléphone Android. Version 0.10.0 (incrément 2 en cours).
 
 | Incrément | Contenu | État |
 | --- | --- | --- |
@@ -22,6 +22,8 @@ Planificateur de voyage sur mesure, utilisable hors ligne : les étapes datées,
 | Suis-je prêt à partir ? | Alertes : nuit sans hébergement, deux hébergements la même nuit, hébergement ou activité hors des dates de son étape, jours non planifiés ou étapes qui se chevauchent. |
 
 ### Toutes les fonctions
+
+- **Tableau** (écran principal) : une ligne par jour, comme un tableur — jour, lieu et transitions (« Jérusalem → Netanya »), programme horodaté, nuit, montant engagé. En tête, la synthèse « ai-je tout rempli ? » : nuits couvertes, trajets réservés, lieux placés, engagé, incohérences. Saisie rapide sur chaque ligne (« 15:25 Débarquement », « 20h dîner chez Avi » : heure et type reconnus), hébergement en une ligne, ajout d'étape en une ligne (lieu, arrivée, nuits) placée automatiquement sur la carte.
 
 - **Mes données** : au premier lancement, vous choisissez d'enregistrer vos voyages sur l'appareil ou d'essayer sans rien enregistrer. Rien n'est écrit avant ce choix. « Mes données » efface tout, choix compris.
 - **Mes voyages** : liste avec dates, nombre d'étapes et points à vérifier ; création ; circuit d'exemple (Israël) ; suppression confirmée.
