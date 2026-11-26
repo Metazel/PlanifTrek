@@ -38,7 +38,7 @@ test.describe('Consentement et données', () => {
     await page.goto('./');
     await page.getByRole('button', { name: 'Enregistrer mes voyages sur cet appareil' }).click();
     await page.getByRole('button', { name: "Charger l'exemple" }).click();
-    await page.getByRole('button', { name: '← Mes voyages' }).click();
+    await page.getByRole('button', { name: 'Mes voyages' }).click();
     await page.reload();
     await expect(page.getByRole('button', { name: /Israël — août \(exemple\)/ })).toBeVisible();
 

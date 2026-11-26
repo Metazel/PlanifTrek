@@ -19,7 +19,7 @@ export function App() {
   }, [current]);
 
   return (
-    <div className="mx-auto flex min-h-dvh max-w-5xl flex-col gap-6 p-4 md:p-8">
+    <div className="mx-auto flex min-h-dvh max-w-6xl flex-col gap-4 p-3 sm:gap-6 md:p-8">
       <a href="#contenu" className="sr-only focus:not-sr-only">
         Aller au contenu
       </a>
@@ -27,7 +27,7 @@ export function App() {
         <h1 className="text-2xl font-semibold tracking-tight">PlanifTrek</h1>
         {mode !== 'inconnu' && (
           <div className="flex items-center gap-2 text-sm">
-            <span className="rounded-full border border-slate-300 px-3 py-1 text-slate-700 dark:border-slate-600 dark:text-slate-300">
+            <span className="rounded-full border border-slate-300 px-3 py-1 text-xs text-slate-700 sm:text-sm dark:border-slate-600 dark:text-slate-300">
               {mode === 'local' ? '💾 Enregistré sur cet appareil' : '⏳ Essai : rien n’est enregistré'}
             </span>
             <button type="button" className={btn.secondary} onClick={() => setErasing(true)}>

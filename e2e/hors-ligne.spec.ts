@@ -26,6 +26,7 @@ test('hors ligne : pack carte téléchargé, application et voyage disponibles s
   await page.evaluate(() => navigator.serviceWorker.ready);
   await page.getByRole('button', { name: 'Enregistrer mes voyages sur cet appareil' }).click();
   await page.getByRole('button', { name: "Charger l'exemple" }).click();
+  await page.getByRole('button', { name: '✎ Détail & carte' }).click();
   await page.getByRole('button', { name: 'Afficher la carte' }).click();
   await page.getByRole('button', { name: 'Télécharger la carte du voyage' }).click();
   await expect(page.getByText(/✓ Pack prêt : \d+ tuiles/)).toBeVisible({ timeout: 60_000 });
@@ -38,6 +39,7 @@ test('hors ligne : pack carte téléchargé, application et voyage disponibles s
   await page.reload();
   await expect(page.getByRole('heading', { name: 'PlanifTrek' })).toBeVisible();
   await page.getByRole('button', { name: /Israël — août \(exemple\)/ }).click();
+  await page.getByRole('button', { name: '✎ Détail & carte' }).click();
   await expect(page.getByRole('heading', { name: 'Étapes' })).toBeVisible();
   await page.getByRole('button', { name: 'Afficher la carte' }).click();
   await expect(page.getByText(/✓ Pack prêt/)).toBeVisible();

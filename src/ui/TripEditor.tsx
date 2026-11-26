@@ -13,6 +13,7 @@ import { Reminders } from './Reminders';
 import { Rentals } from './Rentals';
 import { OfflinePanel } from './OfflinePanel';
 import { Today } from './Today';
+import { TripTable } from './TripTable';
 import { Exports } from './Exports';
 import { StopForm } from './StopForm';
 import { StopList } from './StopList';
@@ -30,7 +31,7 @@ export function TripEditor({ trip }: { trip: Trip }) {
   const [removing, setRemoving] = useState<Id | null>(null);
   const [deletingTrip, setDeletingTrip] = useState(false);
   const [adding, setAdding] = useState(trip.stopOrder.length === 0);
-  const [tab, setTab] = useState<'planning' | 'aujourdhui'>('planning');
+  const [tab, setTab] = useState<'tableau' | 'aujourdhui' | 'planning'>('tableau');
   const [lang, setLang] = useState<MapLang>('fr');
   const [view, setView] = useState<'pays' | string>('pays');
   const legend = view === 'pays' ? null : stopView(trip, view);
@@ -65,11 +66,11 @@ export function TripEditor({ trip }: { trip: Trip }) {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-wrap items-center gap-2">
-        <button type="button" className={btn.secondary} onClick={closeTrip}>
-          ← Mes voyages
+      <div className="flex items-center gap-1 sm:gap-2">
+        <button type="button" className={`${btn.secondary} shrink-0 px-3`} onClick={closeTrip} aria-label="Mes voyages">
+          ←<span className="hidden sm:inline"> Mes voyages</span>
         </button>
-        <label className="flex min-w-48 flex-1 items-center gap-2">
+        <label className="flex min-w-0 flex-1 items-center gap-2">
           <span className="sr-only">Nom du voyage</span>
           <input
             className={`${field} text-lg font-semibold`}
@@ -87,18 +88,19 @@ export function TripEditor({ trip }: { trip: Trip }) {
         </button>
       </div>
 
-      <div role="group" aria-label="Affichage" className="grid grid-cols-2 gap-2">
+      <div role="group" aria-label="Affichage" className="sticky top-0 z-20 grid grid-cols-3 gap-2 bg-[#F8FAFC]/90 py-2 backdrop-blur dark:bg-[#0F172A]/90">
         {(
           [
-            ['planning', '📋 Planning'],
+            ['tableau', '▦ Tableau'],
             ['aujourdhui', '☀ Aujourd’hui'],
+            ['planning', '✎ Détail & carte'],
           ] as const
         ).map(([k, l]) => (
           <button
             key={k}
             type="button"
             aria-pressed={tab === k}
-            className={tab === k ? btn.primary : btn.secondary}
+            className={`${tab === k ? btn.primary : btn.secondary} px-2 text-sm sm:text-base`}
             onClick={() => setTab(k)}
           >
             {l}
@@ -106,7 +108,9 @@ export function TripEditor({ trip }: { trip: Trip }) {
         ))}
       </div>
 
-      {tab === 'aujourdhui' ? (
+      {tab === 'tableau' ? (
+        <TripTable trip={trip} onOpenDetail={() => setTab('planning')} />
+      ) : tab === 'aujourdhui' ? (
         <Today trip={trip} />
       ) : (
       <>

@@ -145,10 +145,10 @@ export function EventForm({
         <input type="checkbox" checked={important} onChange={(e) => setImportant(e.target.checked)} />
         ⭐ À ne pas oublier (rappel dans l’agenda)
       </label>
-      {!lodging && (
+      {(
         <>
           <label className="flex flex-col gap-1 text-sm">
-            Contact (facultatif)
+            {lodging ? 'Hôte / réception (facultatif)' : 'Contact (facultatif)'}
             <input className={field} value={contactName} maxLength={80} autoComplete="off" placeholder="ex. Yossi, guide" onChange={(e) => setContactName(e.target.value)} />
           </label>
           <label className="flex flex-col gap-1 text-sm">

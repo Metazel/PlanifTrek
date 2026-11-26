@@ -5,6 +5,7 @@ test.describe('Rappels « à ne pas oublier »', () => {
     await page.goto('./');
     await page.getByRole('button', { name: 'Enregistrer mes voyages sur cet appareil' }).click();
     await page.getByRole('button', { name: "Charger l'exemple" }).click();
+    await page.getByRole('button', { name: '✎ Détail & carte' }).click();
     const panel = page.getByRole('region', { name: '⭐ À ne pas oublier' });
     await expect(panel).toContainText('Cochez « À ne pas oublier »');
 

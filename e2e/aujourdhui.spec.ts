@@ -16,7 +16,7 @@ test('vue Aujourd’hui et exports', async ({ page }) => {
   await page.getByRole('button', { name: 'Jour suivant' }).click();
   await expect(prog.getByRole('listitem')).toHaveText([/09:55.*Partir pour Gare Yitzhak Navon/, /10:15.*Départ vers Netanya/, /11:40.*Arrivée de Jérusalem/]);
 
-  await page.getByRole('button', { name: '📋 Planning' }).click();
+  await page.getByRole('button', { name: '✎ Détail & carte' }).click();
   const dl = page.waitForEvent('download');
   await page.getByRole('button', { name: /KML/ }).click();
   const file = await dl;

@@ -37,15 +37,18 @@ const TZ: Record<string, string> = {
 const cache = new Map<string, Place[]>();
 let last = 0;
 
-export async function searchPlace(query: string, signal?: AbortSignal): Promise<Place[]> {
+/** bias : zone à privilégier (lieux déjà placés du voyage), sans exclure le reste. */
+export async function searchPlace(query: string, signal?: AbortSignal, bias?: { west: number; south: number; east: number; north: number }): Promise<Place[]> {
   const q = query.trim().slice(0, 120);
   if (q.length < 2) return [];
-  const hit = cache.get(q.toLowerCase());
+  const ck = `${q.toLowerCase()}|${bias ? [bias.west, bias.south, bias.east, bias.north].map((n) => n.toFixed(1)).join(',') : ''}`;
+  const hit = cache.get(ck);
   if (hit) return hit;
   const wait = last + 1100 - Date.now();
   if (wait > 0) await new Promise((r) => setTimeout(r, wait));
   last = Date.now();
-  const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=5&accept-language=fr&q=${encodeURIComponent(q)}`;
+  const vb = bias ? `&viewbox=${[bias.west, bias.north, bias.east, bias.south].map((n) => n.toFixed(3)).join(',')}&bounded=0` : '';
+  const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=5&accept-language=fr${vb}&q=${encodeURIComponent(q)}`;
   const res = await fetch(url, { signal: signal ?? null, credentials: 'omit', referrerPolicy: 'strict-origin-when-cross-origin' });
   if (!res.ok) throw new Error(`Recherche indisponible (${res.status})`);
   const parsed = result.safeParse(await res.json());
@@ -64,6 +67,6 @@ export async function searchPlace(query: string, signal?: AbortSignal): Promise<
       };
     })
     .filter((p): p is Place => !!p);
-  cache.set(q.toLowerCase(), places);
+  cache.set(ck, places);
   return places;
 }
