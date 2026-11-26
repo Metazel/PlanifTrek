@@ -75,6 +75,22 @@ export const tripSchema = z
     stops: z.record(id, stopSchema),
     events: z.array(eventSchema).max(500),
     transports: z.array(transportSchema).max(200),
+    rentals: z
+      .array(
+        z.strictObject({
+          id,
+          agency: text(80),
+          vehicle: text(80).optional(),
+          pickup: endpoint,
+          dropoff: endpoint,
+          bookingRef: text(40).optional(),
+          price: moneySchema.optional(),
+          paymentStatus: paymentStatus.optional(),
+          important: z.boolean().optional(),
+        }),
+      )
+      .max(20)
+      .optional(),
     baseCurrency: currency,
   })
   .superRefine((t, ctx) => {

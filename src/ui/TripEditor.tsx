@@ -10,6 +10,7 @@ import { newId, useStore } from '../state/store';
 import { btn, Dialog, field } from './Dialog';
 import { ReorderDialog } from './ReorderDialog';
 import { Reminders } from './Reminders';
+import { Rentals } from './Rentals';
 import { StopForm } from './StopForm';
 import { StopList } from './StopList';
 import { deviceTimeZone, todayISO } from './format';
@@ -100,6 +101,8 @@ export function TripEditor({ trip }: { trip: Trip }) {
       </section>
 
       <Reminders trip={trip} />
+
+      <Rentals trip={trip} />
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(320px,40%)]">
       <section aria-labelledby="etapes" className="min-w-0">
