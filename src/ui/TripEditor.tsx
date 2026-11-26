@@ -11,6 +11,7 @@ import { btn, Dialog, field } from './Dialog';
 import { ReorderDialog } from './ReorderDialog';
 import { Reminders } from './Reminders';
 import { Rentals } from './Rentals';
+import { OfflinePanel } from './OfflinePanel';
 import { StopForm } from './StopForm';
 import { StopList } from './StopList';
 import { deviceTimeZone, todayISO } from './format';
@@ -207,6 +208,7 @@ export function TripEditor({ trip }: { trip: Trip }) {
             </Suspense>
           </div>
         )}
+        <OfflinePanel trip={trip} />
         <p className="text-sm text-slate-600 dark:text-slate-400">
           Même parcours que la liste des étapes : épingles numérotées dans l’ordre, ▶ départ (vert), ■ arrivée (rouge),
           ⟲ départ et arrivée au même endroit ; traits du vert au rouge dans le sens du voyage, tirets pour l’avion.

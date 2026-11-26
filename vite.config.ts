@@ -1,4 +1,7 @@
 /// <reference types="vitest/config" />
+import { createHash } from 'node:crypto';
+import { readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
+import { join, relative } from 'node:path';
 import { defineConfig, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
@@ -36,10 +39,44 @@ function cspMeta(): Plugin {
   };
 }
 
+/**
+ * Service worker sans dépendance : au build, injecte la liste des fichiers à précharger et une
+ * version (empreinte du contenu) dans src/sw/sw.js, écrit dans dist/sw.js.
+ */
+function serviceWorker(): Plugin {
+  let outDir = 'dist';
+  return {
+    name: 'planiftrek-sw',
+    apply: 'build',
+    configResolved(c) {
+      outDir = c.build.outDir;
+    },
+    writeBundle() {
+      const files: string[] = [];
+      const walk = (dir: string) => {
+        for (const f of readdirSync(dir)) {
+          const p = join(dir, f);
+          if (statSync(p).isDirectory()) walk(p);
+          else files.push(relative(outDir, p).split('\\').join('/'));
+        }
+      };
+      walk(outDir);
+      const list = files.filter((f) => f !== 'sw.js').sort();
+      const hash = createHash('sha256');
+      for (const f of list) hash.update(f).update(readFileSync(join(outDir, f)));
+      const version = hash.digest('hex').slice(0, 12);
+      const sw = readFileSync('src/sw/sw.js', 'utf8')
+        .replace("'__VERSION__'", JSON.stringify(version))
+        .replace('__PRECACHE__', JSON.stringify(['./', ...list.map((f) => `./${f}`)]));
+      writeFileSync(join(outDir, 'sw.js'), sw);
+    },
+  };
+}
+
 export default defineConfig({
   // Le site est publié sur https://metazel.github.io/PlanifTrek/
   base: '/PlanifTrek/',
-  plugins: [react(), tailwindcss(), cspMeta()],
+  plugins: [react(), tailwindcss(), cspMeta(), serviceWorker()],
   worker: { format: 'es' },
   build: {
     sourcemap: false,
