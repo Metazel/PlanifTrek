@@ -169,6 +169,11 @@ export function countryView(trip: Trip): View {
     if (prev) segs.push({ from: ll(prev.p), to: ll(w.p), kind: w.gap ? 'manquant' : prev.leg === 'avion' ? 'avion' : 'sol' });
   });
   const segments = segs.map((sg, i) => ({ ...sg, color: sg.kind === 'manquant' ? '#94a3b8' : rankColor(i, segs.length) }));
+  for (const r of trip.rentals ?? []) {
+    for (const [kind, e] of [['Prise', r.pickup], ['Retour', r.dropoff]] as const) {
+      if (e.point) pins.push({ ...e.point, text: '🚙', cls: 'pt-marker pt-lieu', aria: `${kind} du véhicule ${r.agency} : ${e.place}` });
+    }
+  }
   return { pins, segments, unplaced: base.unplaced, legend: [] };
 }
 

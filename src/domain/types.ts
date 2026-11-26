@@ -130,5 +130,19 @@ export interface Trip {
   stops: Record<Id, Stop>;
   events: TripEvent[];
   transports: Transport[];
+  /** Locations de véhicule (plusieurs possibles par voyage). Absent sur les anciens voyages. */
+  rentals?: Rental[];
   baseCurrency: string;
+}
+
+export interface Rental {
+  id: Id;
+  agency: string;
+  vehicle?: string;
+  pickup: TransportEndpoint;
+  dropoff: TransportEndpoint;
+  bookingRef?: string;
+  price?: Money;
+  paymentStatus?: PaymentStatus;
+  important?: boolean;
 }

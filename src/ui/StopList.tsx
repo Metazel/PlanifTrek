@@ -17,6 +17,7 @@ import type { EventInput, StopInput } from '../domain/edit';
 import { alignLodgingToStop, alignStopToLodging, uncoveredNights } from '../domain/plan';
 import { legOf, type TransportInput } from '../domain/transport';
 import { telHref } from '../domain/reminders';
+import { rentalMoments } from '../domain/rental';
 import { LegRow } from './Transport';
 import type { Id, Stop, Trip, TripEvent } from '../domain/types';
 import { btn, field } from './Dialog';
@@ -302,15 +303,25 @@ function Days(p: StopListProps & { stop: Stop; events: TripEvent[]; onAddOnDay: 
   const { stop, events, trip } = p;
   const days = daysOfStop(stop);
   const outside = events.filter((e) => !e.date || !days.includes(e.date));
-  if (!events.length) return null;
+  const hasRental = days.some((d) => rentalMoments(trip, d).length > 0);
+  if (!events.length && !hasRental) return null;
   return (
     <div className="mt-3 flex flex-col gap-3 border-t border-slate-100 pt-3 dark:border-slate-800">
       {days.map((d) => {
         const list = events.filter((e) => e.date === d);
-        if (!list.length) return null;
+        const cars = rentalMoments(trip, d);
+        if (!list.length && !cars.length) return null;
         return (
           <section key={d} aria-label={`${stop.name}, ${fmtDay(d)}`}>
             <h4 className="text-xs font-semibold uppercase tracking-wide text-slate-500">{fmtDay(d)}</h4>
+            {cars.map((c) => (
+              <p key={`${c.rental.id}-${c.kind}`} className="mt-1 flex min-h-11 items-center gap-2 text-sm">
+                <span aria-hidden="true">🚙</span>
+                <span className="tabular text-slate-500">{c.at.slice(11)}</span>
+                {c.kind === 'prise' ? 'Prise' : 'Retour'} du véhicule — {c.rental.agency}
+                <span className="text-slate-500">({(c.kind === 'prise' ? c.rental.pickup : c.rental.dropoff).place})</span>
+              </p>
+            ))}
             <Sortable ids={list.map((e) => e.id)} label={(id) => trip.events.find((e) => e.id === id)?.title ?? ''} onMove={p.onReorderDay}>
               <ol className="mt-1 flex flex-col gap-1">
                 {list.map((e, i) => (

@@ -106,6 +106,15 @@ export function reminders(trip: Trip): Reminder[] {
       list.push({ id: `${t.id}-partir`, title: `Partir pour${ref} vers ${to} (départ ${t.departure.at.slice(11)})`, at: adv.leaveAt, timeZone: t.departure.timeZone, durationMin: 15, detail: parts });
     }
   }
+  for (const r of trip.rentals ?? []) {
+    if (!r.important) continue;
+    const v = r.vehicle ? ` (${r.vehicle})` : '';
+    const ref = r.bookingRef ? `Réservation ${r.bookingRef}` : undefined;
+    list.push(
+      { id: `${r.id}-prise`, title: `Prendre le véhicule${v} — ${r.agency}`, at: r.pickup.at, timeZone: r.pickup.timeZone, durationMin: 30, place: r.pickup.place, ...(ref ? { detail: ref } : {}) },
+      { id: `${r.id}-retour`, title: `Rendre le véhicule${v} — ${r.agency}`, at: r.dropoff.at, timeZone: r.dropoff.timeZone, durationMin: 30, place: r.dropoff.place, ...(ref ? { detail: ref } : {}) },
+    );
+  }
   return list.sort((a, b) => toInstant(a.at, a.timeZone) - toInstant(b.at, b.timeZone));
 }
 
