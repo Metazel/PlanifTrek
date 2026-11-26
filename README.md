@@ -1,11 +1,11 @@
 # PlanifTrek
 
-Planificateur de voyage sur mesure, utilisable hors ligne : les étapes datées, les trajets, les hébergements, le budget et les billets au même endroit, réorganisables à tout moment sans rien perdre. Un seul voyageur prépare et pilote le voyage, sur PC puis sur son téléphone Android. Version 0.8.0 (incrément 2 en cours).
+Planificateur de voyage sur mesure, utilisable hors ligne : les étapes datées, les trajets, les hébergements, le budget et les billets au même endroit, réorganisables à tout moment sans rien perdre. Un seul voyageur prépare et pilote le voyage, sur PC puis sur son téléphone Android. Version 0.9.0 (incrément 2 en cours).
 
 | Incrément | Contenu | État |
 | --- | --- | --- |
 | 1. Noyau | Étapes et journées, réorganisation avec aperçu des impacts, boucle, contrôles de cohérence, carte en ligne | Fait |
-| 2. Hors ligne | Pack carte de la zone du voyage, vue « Aujourd'hui », passage PC → téléphone, exports Google Maps / KML / GeoJSON / CSV | Application et pack carte hors ligne faits ; la suite en cours |
+| 2. Hors ligne | Pack carte de la zone du voyage, vue « Aujourd'hui », passage PC → téléphone, exports Google Maps / KML / GeoJSON / CSV | Hors ligne, pack carte, « Aujourd'hui » et exports faits ; passage PC → téléphone en cours |
 | 3. Budget et documents | Prévu, réel, reste à payer en plusieurs devises ; billets et réservations rattachés aux événements | À venir |
 | 4. Import | E-mail de confirmation collé ou PDF déposé, lu sur l'appareil, file de validation | À venir |
 
@@ -31,6 +31,8 @@ Planificateur de voyage sur mesure, utilisable hors ligne : les étapes datées,
 - **Sous-étapes** : repas, déplacement, visite, activité, famille, événement (soirée, mariage), temps libre, avec heure facultative ; classées par journée, réorganisables (glisser-déposer ou ↑ ↓) et transférables vers une autre étape.
 - **Trajets** : entre deux étapes, « + Trajet » puis mode (avion, train, voiture, bus, bateau, taxi, marche), lieux et horaires de départ et d'arrivée en heure locale, durée calculée, n° de vol ou de réservation, prix et devise, statut de paiement, « à prévoir » ou « réservé ». Les trajets devenus hors circuit après une réorganisation sont listés pour être gardés ou retirés.
 - **Carte** : fond OpenFreeMap avec les noms en français, en langue locale ou en anglais (repli automatique sur les tuiles OpenStreetMap) ; à droite sur grand écran, à afficher sur téléphone ; épingles numérotées dans l'ordre du circuit (▶ départ, ■ arrivée, ⟲ « 1 · 5 » quand le départ et l'arrivée sont au même endroit), traits du vert au rouge dans le sens du voyage (tirets pour l'avion, gris pointillé quand une étape n'est pas placée), cadrage automatique. Chargée à part, seulement quand elle s'affiche. Les étapes sans position sont listées sous la carte.
+- **Aujourd'hui** : bouton « ☀ Aujourd'hui » (aperçu du premier jour avant le départ) ; étape(s) du jour, hébergement du soir, programme dans l'ordre choisi avec l'heure à laquelle partir, les trajets et les véhicules insérés à leur heure ; 📞 appeler, 🧭 y aller (Google Maps), itinéraire de la journée dans Google Maps (découpé au-delà de 3 étapes intermédiaires).
+- **Exports** : KML pour Google My Maps (un calque par type : étapes, hébergements, visites, transports, véhicules), CSV (protégé contre les formules de tableur), GeoJSON. Aucun lieu « famille » exporté ni envoyé à Google.
 - **Hors ligne** : application installable (« Ajouter à l'écran d'accueil »), utilisable sans réseau dès la première visite (service worker sans dépendance). Bouton « Télécharger la carte du voyage » : vue d'ensemble de la zone, rues détaillées dans un rayon de 3 km autour de chaque lieu placé, polices latines, hébraïques et arabes ; estimation avant, progression, annulation, mise à jour, suppression. Limites OpenFreeMap respectées (3 000 tuiles et 50 Mo au plus, 4 requêtes en parallèle, lancement par l'utilisateur).
 - **Véhicules de location** : plusieurs par voyage ; agence, type de véhicule, lieux (placés sur la carte) et horaires de prise et de retour, référence, prix, paiement ; prise et retour affichés dans la journée concernée et ajoutés aux rappels ; retour avant la prise refusé.
 - **À ne pas oublier** : case ⭐ sur une sous-étape ou un trajet (mariage, guide, vol retour) ; contact avec bouton 📞 Appeler ; liste des rappels triés avec « Google Agenda » (formulaire pré-rempli, ouvert seulement sur clic) et fichier .ics (alerte 30 min avant, un rappel ou tous). L'adresse privée d'une étape famille n'est jamais reprise.
