@@ -12,6 +12,8 @@ import { ReorderDialog } from './ReorderDialog';
 import { Reminders } from './Reminders';
 import { Rentals } from './Rentals';
 import { OfflinePanel } from './OfflinePanel';
+import { Today } from './Today';
+import { Exports } from './Exports';
 import { StopForm } from './StopForm';
 import { StopList } from './StopList';
 import { deviceTimeZone, todayISO } from './format';
@@ -28,6 +30,7 @@ export function TripEditor({ trip }: { trip: Trip }) {
   const [removing, setRemoving] = useState<Id | null>(null);
   const [deletingTrip, setDeletingTrip] = useState(false);
   const [adding, setAdding] = useState(trip.stopOrder.length === 0);
+  const [tab, setTab] = useState<'planning' | 'aujourdhui'>('planning');
   const [lang, setLang] = useState<MapLang>('fr');
   const [view, setView] = useState<'pays' | string>('pays');
   const legend = view === 'pays' ? null : stopView(trip, view);
@@ -84,6 +87,29 @@ export function TripEditor({ trip }: { trip: Trip }) {
         </button>
       </div>
 
+      <div role="group" aria-label="Affichage" className="grid grid-cols-2 gap-2">
+        {(
+          [
+            ['planning', '📋 Planning'],
+            ['aujourdhui', '☀ Aujourd’hui'],
+          ] as const
+        ).map(([k, l]) => (
+          <button
+            key={k}
+            type="button"
+            aria-pressed={tab === k}
+            className={tab === k ? btn.primary : btn.secondary}
+            onClick={() => setTab(k)}
+          >
+            {l}
+          </button>
+        ))}
+      </div>
+
+      {tab === 'aujourdhui' ? (
+        <Today trip={trip} />
+      ) : (
+      <>
       <section aria-labelledby="controles" className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
         <h2 id="controles" className="font-semibold">
           Contrôles
@@ -236,6 +262,10 @@ export function TripEditor({ trip }: { trip: Trip }) {
         </p>
       </aside>
       </div>
+
+      <Exports trip={trip} />
+      </>
+      )}
 
       <div>
         <button type="button" className={`${btn.secondary} text-red-700 dark:text-red-400`} onClick={() => setDeletingTrip(true)}>
