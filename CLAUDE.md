@@ -42,6 +42,6 @@ sur l'appareil, aucun serveur. Un seul utilisateur prépare et pilote le voyage 
 
 ## Incréments
 1. Noyau : itinéraire, réorganisation, cohérence, carte en ligne ✓
-2. Hors ligne ← suivant :, vue Aujourd'hui, relais PC → téléphone, exports
+2. Hors ligne ✓ (service worker `src/sw/sw.js`, pack `src/ui/pack.ts`) ; vue Aujourd'hui, relais PC → téléphone, exports ← en cours
 3. Budget et documents
 4. Import e-mail / PDF

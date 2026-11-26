@@ -11,3 +11,10 @@ createRoot(root).render(
     <App />
   </StrictMode>,
 );
+
+// Hors ligne : service worker enregistré en production uniquement.
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`, { scope: import.meta.env.BASE_URL }).catch(() => undefined);
+  });
+}
