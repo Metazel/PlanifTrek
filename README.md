@@ -1,6 +1,6 @@
 # PlanifTrek
 
-Planificateur de voyage sur mesure, utilisable hors ligne : les étapes datées, les trajets, les hébergements, le budget et les billets au même endroit, réorganisables à tout moment sans rien perdre. Un seul voyageur prépare et pilote le voyage, sur PC puis sur son téléphone Android. Version 0.5.0 (incrément 1 terminé).
+Planificateur de voyage sur mesure, utilisable hors ligne : les étapes datées, les trajets, les hébergements, le budget et les billets au même endroit, réorganisables à tout moment sans rien perdre. Un seul voyageur prépare et pilote le voyage, sur PC puis sur son téléphone Android. Version 0.6.0 (incrément 1 terminé).
 
 | Incrément | Contenu | État |
 | --- | --- | --- |
@@ -31,6 +31,8 @@ Planificateur de voyage sur mesure, utilisable hors ligne : les étapes datées,
 - **Sous-étapes** : repas, déplacement, visite, activité, famille, événement (soirée, mariage), temps libre, avec heure facultative ; classées par journée, réorganisables (glisser-déposer ou ↑ ↓) et transférables vers une autre étape.
 - **Trajets** : entre deux étapes, « + Trajet » puis mode (avion, train, voiture, bus, bateau, taxi, marche), lieux et horaires de départ et d'arrivée en heure locale, durée calculée, n° de vol ou de réservation, prix et devise, statut de paiement, « à prévoir » ou « réservé ». Les trajets devenus hors circuit après une réorganisation sont listés pour être gardés ou retirés.
 - **Carte** : fond OpenFreeMap avec les noms en français, en langue locale ou en anglais (repli automatique sur les tuiles OpenStreetMap) ; à droite sur grand écran, à afficher sur téléphone ; épingles numérotées dans l'ordre du circuit (▶ départ, ■ arrivée, ⟲ « 1 · 5 » quand le départ et l'arrivée sont au même endroit), traits du vert au rouge dans le sens du voyage (tirets pour l'avion, gris pointillé quand une étape n'est pas placée), cadrage automatique. Chargée à part, seulement quand elle s'affiche. Les étapes sans position sont listées sous la carte.
+- **À ne pas oublier** : case ⭐ sur une sous-étape ou un trajet (mariage, guide, vol retour) ; contact avec bouton 📞 Appeler ; liste des rappels triés avec « Google Agenda » (formulaire pré-rempli, ouvert seulement sur clic) et fichier .ics (alerte 30 min avant, un rappel ou tous). L'adresse privée d'une étape famille n'est jamais reprise.
+- **Heure de départ conseillée** : pour chaque trajet, heure de départ moins l'enregistrement (avion 3 h, bateau 1 h 30, train 20 min, bus 15 min), le battement (avion 1 h : rendre la voiture, terminal) et la route depuis le dernier lieu connu (estimée à 60 km/h × 1,3 ou saisie) ; affichée « ⏰ Partir à … » et ajoutée aux rappels.
 - **Vues de carte** : « Tout le voyage » (étapes, aéroports et gares de départ et d'arrivée, hébergements, chemin de l'un à l'autre) ou une étape (chaque journée en couleur : hébergement → sous-étapes dans l'ordre → hébergement), avec légende des journées et liste des sous-étapes non placées.
 - **Positions** : « 📍 Chercher le lieu » sur les étapes, les hébergements, les sous-étapes et les lieux de départ et d'arrivée des trajets (jamais pour la famille). Sous-étapes et hébergements modifiables (✎).
 - **Nuit en transit** : pas d'alerte « nuit sans hébergement » quand un trajet part entre 18 h et 8 h le lendemain ou roule de nuit (chambre libérée en journée, vol à 5 h).
@@ -101,5 +103,6 @@ Le workflow `.github/workflows/pages.yml` publie le site à chaque fusion sur `m
 - Fuseau horaire choisi par l'utilisateur pour chaque étape (pas de déduction automatique depuis la carte).
 - Trajets estimés à vol d'oiseau : pas de calcul d'itinéraire routier.
 - Taux de change saisis à la main.
+- Pas d'alarme réglée directement sur le téléphone (impossible depuis une application web) : passer par l'agenda.
 
 Cartes © OpenFreeMap, © OpenMapTiles, © OpenStreetMap contributors. Application indépendante, non affiliée aux services cités. Licence MIT.

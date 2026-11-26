@@ -3,6 +3,7 @@ import { daysOfStop } from '../domain/coherence';
 import { validateEvent, type EventError, type EventInput } from '../domain/edit';
 import type { EventKind, GeoPoint, ISODate, Stop, Trip, TripEvent } from '../domain/types';
 import { PlaceSearch } from './PlaceSearch';
+import { isPhone } from '../domain/reminders';
 import { btn, field } from './Dialog';
 import { fmtDay } from './format';
 
@@ -58,12 +59,18 @@ export function EventForm({
   const [checkOut, setCheckOut] = useState(src.checkOut ?? stop.departure);
   const [point, setPoint] = useState<GeoPoint | undefined>(initial?.point);
   const [pending, setPending] = useState(false);
+  const [important, setImportant] = useState(initial?.important ?? false);
+  const [contactName, setContactName] = useState(initial?.contact?.name ?? '');
+  const [phone, setPhone] = useState(initial?.contact?.phone ?? '');
+  const [phoneError, setPhoneError] = useState(false);
   const [errors, setErrors] = useState<EventError[]>([]);
   const lodging = kind === 'hebergement';
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
     if (pending) return;
+    if (phone.trim() && !isPhone(phone)) return setPhoneError(true);
+    setPhoneError(false);
     // On garde les informations déjà saisies ailleurs (référence, prix, statut).
     const keep = initial ? { ...initial } : {};
     const base = { ...keep, stopId: stop.id, kind, title, ...(point ? { point } : {}) };
@@ -71,6 +78,10 @@ export function EventForm({
       ? { ...base, checkIn, checkOut }
       : { ...base, date, ...(time ? { time } : {}) };
     if (!time) delete (input as { time?: string }).time;
+    if (important) input.important = true;
+    else delete input.important;
+    if (contactName.trim()) input.contact = { name: contactName.trim().slice(0, 80), ...(phone.trim() ? { phone: phone.trim() } : {}) };
+    else delete input.contact;
     if (!point) delete (input as { point?: GeoPoint }).point;
     delete (input as { id?: string }).id;
     const errs = validateEvent(trip, input);
@@ -127,6 +138,23 @@ export function EventForm({
           <label className="flex flex-col gap-1 text-sm">
             Heure (facultatif)
             <input type="time" className={field} value={time} onChange={(e) => setTime(e.target.value)} />
+          </label>
+        </>
+      )}
+      <label className="flex min-h-11 items-center gap-2 text-sm sm:col-span-2">
+        <input type="checkbox" checked={important} onChange={(e) => setImportant(e.target.checked)} />
+        ⭐ À ne pas oublier (rappel dans l’agenda)
+      </label>
+      {!lodging && (
+        <>
+          <label className="flex flex-col gap-1 text-sm">
+            Contact (facultatif)
+            <input className={field} value={contactName} maxLength={80} autoComplete="off" placeholder="ex. Yossi, guide" onChange={(e) => setContactName(e.target.value)} />
+          </label>
+          <label className="flex flex-col gap-1 text-sm">
+            Téléphone du contact
+            <input className={field} type="tel" inputMode="tel" value={phone} maxLength={24} autoComplete="off" aria-invalid={phoneError} onChange={(e) => setPhone(e.target.value)} />
+            {phoneError && <span role="alert" className="text-red-700 dark:text-red-400">Numéro invalide (chiffres, +, espaces).</span>}
           </label>
         </>
       )}

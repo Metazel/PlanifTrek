@@ -44,6 +44,8 @@ const eventSchema = z.strictObject({
   paymentStatus: paymentStatus.optional(),
   bookingRef: text(40).optional(),
   point: point.optional(),
+  important: z.boolean().optional(),
+  contact: z.strictObject({ name: text(80), phone: z.string().regex(/^\+?[0-9 ().-]{4,24}$/).optional() }).optional(),
 });
 
 const endpoint = z.strictObject({ place: text(120), at: localDateTime, timeZone, point: point.optional() });
@@ -59,6 +61,10 @@ const transportSchema = z.strictObject({
   bookingRef: text(40).optional(),
   price: moneySchema.optional(),
   paymentStatus: paymentStatus.optional(),
+  important: z.boolean().optional(),
+  checkInMin: z.number().int().min(0).max(720).optional(),
+  bufferMin: z.number().int().min(0).max(720).optional(),
+  travelMin: z.number().int().min(0).max(2880).optional(),
 });
 
 export const tripSchema = z

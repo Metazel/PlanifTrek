@@ -16,6 +16,7 @@ import { diffDays } from '../domain/dates';
 import type { EventInput, StopInput } from '../domain/edit';
 import { alignLodgingToStop, alignStopToLodging, uncoveredNights } from '../domain/plan';
 import { legOf, type TransportInput } from '../domain/transport';
+import { telHref } from '../domain/reminders';
 import { LegRow } from './Transport';
 import type { Id, Stop, Trip, TripEvent } from '../domain/types';
 import { btn, field } from './Dialog';
@@ -349,6 +350,12 @@ function SubStep(p: StopListProps & { stop: Stop; event: TripEvent; first: boole
         {e.time && <span className="tabular mr-1 text-slate-500">{e.time}</span>}
         {e.title}
         {e.point && <span className="ml-1" title="placé sur la carte" aria-label="placé sur la carte">📍</span>}
+        {e.important && <span className="ml-1" title="À ne pas oublier" aria-label="à ne pas oublier">⭐</span>}
+        {e.contact?.phone && (
+          <a className="ml-2 underline" href={telHref(e.contact.phone)}>
+            📞 {e.contact.name}
+          </a>
+        )}
       </span>
       <span className="ml-auto flex items-center gap-1">
       <button type="button" className={btn.icon} disabled={p.first} onClick={() => p.onMoveEvent(e.id, -1)} aria-label={`Monter ${e.title}`}>

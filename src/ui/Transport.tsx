@@ -5,6 +5,7 @@ import { transportMinutes, validateTransport, type TransportError, type Transpor
 import type { PaymentStatus, Stop, Transport, TransportMode, TransportStatus, Trip } from '../domain/types';
 import { btn, field } from './Dialog';
 import { PlaceSearch } from './PlaceSearch';
+import { departureAdvice } from '../domain/reminders';
 import type { GeoPoint } from '../domain/types';
 
 export const MODES: Record<TransportMode, [string, string]> = {
@@ -25,6 +26,7 @@ const ERR: Record<TransportError, string> = {
 };
 
 const hm = (at?: string) => at?.slice(11) ?? '';
+const minutes = (k: 'checkInMin' | 'bufferMin' | 'travelMin', v: string) => (v.trim() ? { [k]: Math.min(2880, Number(v)) } : {});
 
 /** Ligne de trajet entre deux étapes, avec ajout ou modification sur place. */
 export function LegRow({
@@ -56,6 +58,7 @@ export function LegRow({
     );
   }
   const minutes = transportMinutes(transport);
+  const adv = departureAdvice(trip, transport);
   const [icon, label] = MODES[transport.mode];
   return (
     <div className="mt-3 border-t border-dashed border-slate-200 pt-3 text-sm dark:border-slate-700">
@@ -88,6 +91,7 @@ export function LegRow({
                 {minutes !== null && ` (${formatDuration(minutes)})`}
               </span>
             )}
+            {transport.important && <span className="ml-1" aria-label="à ne pas oublier">⭐</span>}
             {transport.bookingRef && <span className="ml-2 text-slate-500">réf. {transport.bookingRef}</span>}
             {transport.price && <span className="tabular ml-2">{formatMoney(transport.price)}</span>}
             <span className={`ml-2 rounded-full px-2 py-0.5 text-xs ${transport.status === 'reserve' ? 'bg-emerald-100 text-emerald-900 dark:bg-emerald-900 dark:text-emerald-100' : 'bg-amber-100 text-amber-900 dark:bg-amber-900 dark:text-amber-100'}`}>
@@ -97,6 +101,16 @@ export function LegRow({
           <button type="button" className={btn.secondary} onClick={() => setEditing(true)}>
             Modifier le trajet
           </button>
+          {adv && (
+            <p className="w-full font-medium text-blue-800 dark:text-blue-300">
+              ⏰ Partir à {adv.leaveAt.slice(11)}
+              {adv.leaveAt.slice(0, 10) !== transport.departure?.at.slice(0, 10) && ' la veille'}
+              <span className="font-normal text-slate-600 dark:text-slate-300">
+                {' '}
+                ({[adv.checkIn && `enregistrement ${adv.checkIn} min`, adv.buffer && `battement ${adv.buffer} min`, adv.travel && `route ${adv.travelEstimated ? '≈' : ''}${adv.travel} min`].filter(Boolean).join(' + ')})
+              </span>
+            </p>
+          )}
         </div>
       )}
     </div>
@@ -133,6 +147,10 @@ function TransportForm({
   const [depPoint, setDepPoint] = useState<GeoPoint | undefined>(transport.departure?.point);
   const [arrPoint, setArrPoint] = useState<GeoPoint | undefined>(transport.arrival?.point);
   const [pending, setPending] = useState(false);
+  const [important, setImportant] = useState(transport.important ?? false);
+  const [checkIn, setCheckIn] = useState(transport.checkInMin?.toString() ?? '');
+  const [buffer, setBuffer] = useState(transport.bufferMin?.toString() ?? '');
+  const [travel, setTravel] = useState(transport.travelMin?.toString() ?? '');
   const [errors, setErrors] = useState<string[]>([]);
 
   const submit = (e: FormEvent) => {
@@ -147,6 +165,10 @@ function TransportForm({
       ...(ref.trim() ? { bookingRef: ref } : {}),
       ...(amount !== null && amount >= 0 ? { price: { amountMinor: amount, currency } } : {}),
       ...(pay ? { paymentStatus: pay } : {}),
+      ...(important ? { important } : {}),
+      ...minutes('checkInMin', checkIn),
+      ...minutes('bufferMin', buffer),
+      ...minutes('travelMin', travel),
     };
     const errs: string[] = validateTransport(input).map((x) => ERR[x]);
     if (price.trim() && (amount === null || amount < 0)) errs.push('Prix invalide (ex. 44,50).');
@@ -155,6 +177,12 @@ function TransportForm({
   };
 
   const L = 'flex flex-col gap-1 text-sm';
+  const delay = (label: string, value: string, set: (v: string) => void, placeholder: string) => (
+    <label className={L}>
+      {label}
+      <input className={field} inputMode="numeric" value={value} placeholder={placeholder} onChange={(e) => set(e.target.value.replace(/[^0-9]/g, '').slice(0, 4))} />
+    </label>
+  );
   return (
     <form onSubmit={submit} noValidate className="grid gap-3 rounded-xl bg-slate-50 p-3 sm:grid-cols-2 dark:bg-slate-800/50">
       <label className={L}>
@@ -225,6 +253,16 @@ function TransportForm({
           ))}
         </select>
       </label>
+      <label className="flex min-h-11 items-center gap-2 text-sm sm:col-span-2">
+        <input type="checkbox" checked={important} onChange={(e) => setImportant(e.target.checked)} />
+        ⭐ À ne pas oublier (rappel du départ et de l’heure à laquelle partir)
+      </label>
+      <fieldset className="grid gap-3 sm:col-span-2 sm:grid-cols-3">
+        <legend className="mb-1 text-sm font-medium">Heure de départ conseillée (minutes ; vide = valeur par défaut)</legend>
+        {delay('Enregistrement avant le départ', checkIn, setCheckIn, mode === 'avion' ? '180' : mode === 'bateau' ? '90' : mode === 'train' ? '20' : mode === 'bus' ? '15' : '0')}
+        {delay('Battement (rendre la voiture, terminal)', buffer, setBuffer, mode === 'avion' ? '60' : '0')}
+        {delay('Route jusqu’au départ', travel, setTravel, 'estimée')}
+      </fieldset>
       {errors.length > 0 && (
         <ul role="alert" className="text-sm text-red-700 sm:col-span-2 dark:text-red-400">
           {errors.map((e) => (

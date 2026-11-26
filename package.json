@@ -1,7 +1,7 @@
 {
   "name": "planiftrek",
   "private": true,
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "Planificateur de voyage local-first, hors ligne, sans serveur.",
   "license": "MIT",
   "type": "module",
