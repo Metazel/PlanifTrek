@@ -81,6 +81,15 @@ export interface TripEvent {
   paymentStatus?: PaymentStatus;
   bookingRef?: string;
   point?: GeoPoint;
+  /** « À ne pas oublier » : apparaît dans les rappels. */
+  important?: boolean;
+  /** Contact à joindre (guide, famille, chauffeur). */
+  contact?: Contact;
+}
+
+export interface Contact {
+  name: string;
+  phone?: string;
 }
 
 export type TransportMode = 'avion' | 'train' | 'voiture' | 'bus' | 'bateau' | 'taxi' | 'marche';
@@ -106,6 +115,11 @@ export interface Transport {
   bookingRef?: string;
   price?: Money;
   paymentStatus?: PaymentStatus;
+  important?: boolean;
+  /** Heure de départ conseillée : minutes d'enregistrement, de battement (rendre la voiture…), de route (vide = estimée). */
+  checkInMin?: number;
+  bufferMin?: number;
+  travelMin?: number;
 }
 
 export interface Trip {

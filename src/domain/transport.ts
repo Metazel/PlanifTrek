@@ -10,6 +10,10 @@ export interface TransportInput {
   bookingRef?: string;
   price?: Money;
   paymentStatus?: PaymentStatus;
+  important?: boolean;
+  checkInMin?: number;
+  bufferMin?: number;
+  travelMin?: number;
 }
 
 export type TransportError = 'arrivee-avant-depart' | 'horaire-invalide' | 'etape-inconnue';
@@ -45,6 +49,11 @@ export function updateTransport(trip: Trip, id: Id, input: TransportInput): Trip
   if (ref) next.bookingRef = ref;
   if (input.price) next.price = input.price;
   if (input.paymentStatus) next.paymentStatus = input.paymentStatus;
+  if (input.important) next.important = true;
+  for (const k of ['checkInMin', 'bufferMin', 'travelMin'] as const) {
+    const v = input[k];
+    if (v !== undefined && Number.isInteger(v) && v >= 0) next[k] = Math.min(k === 'travelMin' ? 2880 : 720, v);
+  }
   return { ...trip, transports: trip.transports.map((x) => (x.id === id ? next : x)) };
 }
 
